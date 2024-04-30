@@ -1,5 +1,6 @@
 #pragma once
 #include "ast.hpp"
 
-bool checkTypeUsesValid(const ast::context& context);
+//maybe rename, as it also fills in function calls with corrosponding function defs
+bool checkTypeUsesValid(ast::context& context);
 

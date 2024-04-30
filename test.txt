@@ -7,6 +7,6 @@ float 54test76(bool myvar7){
 	int myvar8;
 	print(myvar7);
 	float myfloat;
-	print(myvar7, myvar8);
+	//print(myvar7, myvar8);
 }
 

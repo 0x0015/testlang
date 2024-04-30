@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <variant>
+#include <optional>
 
 namespace ast{
 	enum type{
@@ -51,6 +52,7 @@ namespace ast{
 		struct call{
 			std::string name;
 			std::vector<std::string> args;
+			std::optional<std::reference_wrapper<const function>> validatedDef = std::nullopt;
 		};
 		using statement = std::variant<declaration, call>;
 		std::vector<statement> body;

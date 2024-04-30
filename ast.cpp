@@ -15,7 +15,11 @@ void ast::function::dump() const{
 			std::cout<<"\tCall: "<<cll.name<<"( ";
 			for(const auto& arg : cll.args)
 				std::cout<<arg<<" ";
-			std::cout<<")"<<std::endl;
+			std::cout<<")";
+			if(cll.validatedDef){
+				std::cout<<" ((matched))";
+			}
+			std::cout<<std::endl;
 		}else{
 			std::cout<<"\tUnknown statement"<<std::endl;
 		}

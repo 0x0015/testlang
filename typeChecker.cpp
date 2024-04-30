@@ -2,14 +2,14 @@
 #include <unordered_map>
 #include <optional>
 
-bool checkTypeUsesValid(const ast::context& context){
+bool checkTypeUsesValid(ast::context& context){
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> functions;
 	for(const auto& func : context.funcs){
 		functions.insert({func.name, std::cref(func)});
 	}
 	
 	bool errored = false;
-	for(const auto& func : context.funcs){
+	for(auto& func : context.funcs){
 		std::unordered_map<std::string, ast::type> definedVars;
 		for(const auto& arg : func.args){
 			if(definedVars.contains(arg.name)){
@@ -19,7 +19,7 @@ bool checkTypeUsesValid(const ast::context& context){
 				definedVars[arg.name] = arg.ty;
 			}
 		}
-		for(const auto& state : func.body){
+		for(auto& state : func.body){
 			if(std::holds_alternative<ast::function::declaration>(state)){
 				const auto& decl = std::get<ast::function::declaration>(state);
 				if(definedVars.contains(decl.name)){
@@ -29,7 +29,7 @@ bool checkTypeUsesValid(const ast::context& context){
 					definedVars[decl.name] = decl.ty;
 				}
 			}else if(std::holds_alternative<ast::function::call>(state)){
-				const auto& call = std::get<ast::function::call>(state);
+				auto& call = std::get<ast::function::call>(state);
 				const auto& funcs = functions.equal_range(call.name);
 
 				bool unableToDecernCallargTypes = false;
@@ -87,7 +87,7 @@ bool checkTypeUsesValid(const ast::context& context){
 					errored = true;
 				}
 				//realistically here I should do something with the matched functions (as I'm definitely going to need that)
-				//TODO: figure that out
+				call.validatedDef = matchingFunc;
 			}
 		}
 	}
