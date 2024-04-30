@@ -1,0 +1,12 @@
+int test (int test6, int test7) {}
+bool test2(){
+	int test;
+	print(test);
+}
+float 54test76(bool myvar7){
+	int myvar8;
+	print(myvar7);
+	float myfloat;
+	print(myvar7, myvar8);
+}
+
