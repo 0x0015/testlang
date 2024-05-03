@@ -1,5 +1,21 @@
 #include "ast.hpp"
 
+ast::type ast::function::call::getLiteralType(const literalArg& lit){
+	if(std::holds_alternative<int>(lit)){
+		return ast::int_type;
+	}else if(std::holds_alternative<float>(lit)){
+		return ast::float_type;
+	}else if(std::holds_alternative<bool>(lit)){
+		return ast::bool_type;
+	}else{
+		return none_type;
+	}
+}
+
+void printLiteralView(const ast::function::call::literalArg& val){
+	std::cout<<"<literal> ";
+}
+
 void ast::function::dump() const{
 	std::cout<<type_rmap(ty)<<" "<<name<<"("<<std::endl;
 	for(const auto& arg : args){
@@ -13,8 +29,13 @@ void ast::function::dump() const{
 		}else if(std::holds_alternative<call>(state)){
 			const auto& cll = std::get<call>(state);
 			std::cout<<"\tCall: "<<cll.name<<"( ";
-			for(const auto& arg : cll.args)
-				std::cout<<arg<<" ";
+			for(const auto& arg : cll.args){
+				if(std::holds_alternative<call::varNameArg>(arg)){
+					std::cout<<std::get<call::varNameArg>(arg)<<" ";
+				}else if(std::holds_alternative<call::literalArg>(arg)){
+					printLiteralView(std::get<call::literalArg>(arg));
+				}
+			}
 			std::cout<<")";
 			if(cll.validatedDef){
 				std::cout<<" ((matched))";

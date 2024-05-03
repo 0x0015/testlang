@@ -51,7 +51,11 @@ namespace ast{
 		};
 		struct call{
 			std::string name;
-			std::vector<std::string> args;
+			using varNameArg = std::string;
+			using literalArg = std::variant<int, float, bool>;
+			using argument = std::variant<varNameArg, literalArg>;
+			static type getLiteralType(const literalArg& lit);
+			std::vector<argument> args;
 			std::optional<std::reference_wrapper<const function>> validatedDef = std::nullopt;
 		};
 		using statement = std::variant<declaration, call>;

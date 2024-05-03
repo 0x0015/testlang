@@ -3,14 +3,14 @@
 #include <lexy/callback.hpp>
 
 #include "type.hpp"
+#include "literal.hpp"
 
 namespace{
 namespace grammer{
 	namespace dsl = lexy::dsl;
 
 	struct identifier_t{
-		static constexpr auto rule = dsl::identifier(dsl::ascii::alpha_digit_underscore)
-			.reserve(type_t::void_type::rule, type_t::int_type::rule, type_t::float_type::rule, type_t::bool_type::rule);
+		static constexpr auto rule = id.reserve(type_t::void_type::rule, type_t::int_type::rule, type_t::float_type::rule, type_t::bool_type::rule, literal_t::boolean_t::true_t::rule, literal_t::boolean_t::false_t::rule);
 		static constexpr auto value = lexy::as_string<std::string>;
 	};
 	constexpr auto identifier = dsl::p<identifier_t>;

@@ -1,0 +1,72 @@
+#include "interpreter.hpp"
+
+namespace interpreter{
+namespace impl{
+	void print(int val){
+		std::cout<<val;
+	}
+	void print(float val){
+		std::cout<<val;
+	}
+	void print(bool val){
+		std::cout<<(val ? "true" : "false");
+	}
+
+	void println(int val){
+		std::cout<<val<<std::endl;
+	}
+	void println(float val){
+		std::cout<<val<<std::endl;
+	}
+	void println(bool val){
+		std::cout<<(val ? "true" : "false")<<std::endl;
+	}
+}
+}
+
+
+void interpreter::handleBulitin(const ast::function& func, const ast::function::call& call, interpreter& M){
+
+	auto functionMatches = [&](const std::string_view name, const std::vector<ast::type> CAT){
+		if(func.name != name)
+			return false;
+		if(func.args.size() != CAT.size())
+			return false;
+		for(unsigned int i=0;i<CAT.size();i++){
+			if(func.args[i].ty != CAT[i])
+				return false;
+		}
+		return true;
+	};
+
+	auto getArg = [&]<typename T>(unsigned int argNum) -> T{
+		if(std::holds_alternative<ast::function::call::varNameArg>(call.args[argNum])){
+			auto carg = std::get<ast::function::call::varNameArg>(call.args[argNum]);
+			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
+			return *arg;
+		}else if(std::holds_alternative<ast::function::call::literalArg>(call.args[argNum])){	
+			auto larg = std::get<ast::function::call::literalArg>(call.args[argNum]);
+			return std::get<T>(larg);
+		}else{
+			std::cerr<<"Unknown interpreter type error"<<std::endl;
+			return T{};
+		}
+	};
+
+	if(functionMatches("print", {ast::int_type})){
+		impl::print(getArg.operator()<int>(0));
+	}else if(functionMatches("print", {ast::float_type})){
+		impl::print(getArg.operator()<float>(0));
+	}else if(functionMatches("print", {ast::bool_type})){
+		impl::print(getArg.operator()<bool>(0));
+	}else if(functionMatches("println", {ast::int_type})){
+		impl::println(getArg.operator()<int>(0));
+	}else if(functionMatches("println", {ast::float_type})){
+		impl::println(getArg.operator()<float>(0));
+	}else if(functionMatches("println", {ast::bool_type})){
+		impl::println(getArg.operator()<bool>(0));
+	}else{
+		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
+	}
+}
+

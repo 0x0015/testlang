@@ -11,6 +11,8 @@
 #include "functionChecker.hpp"
 #include "typeChecker.hpp"
 
+#include "interpreter/interpreter.hpp"
+
 int main(){
 	auto file = lexy::read_file<lexy::utf8_encoding>("test.txt");
 	if(!file)
@@ -38,8 +40,10 @@ int main(){
 	errored = errored || !checkConflictingFunctionDefinitions(val);
 	errored = errored || !checkTypeUsesValid(val);
 
-	if(!errored)
+	if(!errored){
 		val.dump();
+		interpreter::interpret(val, "main");
+	}
 
 	return errored;
 }

@@ -3,7 +3,9 @@ OBJS	= main.cpp.o\
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
 	  functionChecker.cpp.o \
-	  typeChecker.cpp.o
+	  typeChecker.cpp.o \
+	  interpreter/interpreter.cpp.o \
+	  interpreter/builtins.cpp.o
 
 
 OUT	= main

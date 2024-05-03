@@ -5,6 +5,7 @@
 
 #include "type.hpp"
 #include "identifier.hpp"
+#include "literal.hpp"
 #include "util.hpp"
 
 namespace{
@@ -31,8 +32,13 @@ namespace grammer{
 				static constexpr auto declaration = dsl::p<declaration_t>;
 				struct call_t{
 					struct arguments_t{
-						static constexpr auto rule = dsl::parenthesized(util::optList(identifier, dsl::sep(dsl::comma)));;
-						static constexpr auto value = lexy::as_list<std::vector<std::string>>;
+						struct argument_t{
+							static constexpr auto rule = identifier | literal;
+							static constexpr auto value = lexy::construct<ast::function::call::argument>;
+						};
+						static constexpr auto argument = dsl::p<argument_t>;
+						static constexpr auto rule = dsl::parenthesized(util::optList(argument, dsl::sep(dsl::comma)));;
+						static constexpr auto value = lexy::as_list<std::vector<ast::function::call::argument>>;
 					};
 					static constexpr auto arguments = dsl::p<arguments_t>;
 					static constexpr auto rule = identifier >> arguments;

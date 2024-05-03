@@ -7,7 +7,7 @@ namespace{
 namespace grammer{
 	namespace dsl = lexy::dsl;
 
-	static constexpr auto id = dsl::identifier(dsl::ascii::alpha_digit_underscore);
+	static constexpr auto id = dsl::identifier(dsl::ascii::alpha_underscore, dsl::ascii::alpha_digit_underscore);
 
 	struct type_t{
 		struct void_type{

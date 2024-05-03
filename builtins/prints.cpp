@@ -1,13 +1,7 @@
 #include "builtins.hpp"
 
 void addPrints(ast::context& context){
-	ast::function void_print;
-	void_print.name = "print";
-	void_print.ty = ast::void_type;
-	void_print.args = {};
-	void_print.builtin = true;
-	context.funcs.push_back(void_print);
-
+	//print
 	ast::function int_print;
 	int_print.name = "print";
 	int_print.ty = ast::void_type;
@@ -28,4 +22,26 @@ void addPrints(ast::context& context){
 	bool_print.args = {{ast::bool_type, "val"}};
 	bool_print.builtin = true;
 	context.funcs.push_back(bool_print);
+
+	//println
+	ast::function int_println;
+	int_println.name = "println";
+	int_println.ty = ast::void_type;
+	int_println.args = {{ast::int_type, "val"}};
+	int_println.builtin = true;
+	context.funcs.push_back(int_println);
+
+	ast::function float_println;
+	float_println.name = "println";
+	float_println.ty = ast::void_type;
+	float_println.args = {{ast::float_type, "val"}};
+	float_println.builtin = true;
+	context.funcs.push_back(float_println);
+
+	ast::function bool_println;
+	bool_println.name = "println";
+	bool_println.ty = ast::void_type;
+	bool_println.args = {{ast::bool_type, "val"}};
+	bool_println.builtin = true;
+	context.funcs.push_back(bool_println);
 }

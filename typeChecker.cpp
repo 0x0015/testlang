@@ -2,6 +2,17 @@
 #include <unordered_map>
 #include <optional>
 
+ast::type getArgumentType(std::unordered_map<std::string, ast::type>& definedVars, const ast::function::call::argument& arg){
+	if(std::holds_alternative<ast::function::call::varNameArg>(arg)){
+		return definedVars[std::get<ast::function::call::varNameArg>(arg)];
+	}else if(std::holds_alternative<ast::function::call::literalArg>(arg)){
+		return ast::function::call::getLiteralType(std::get<ast::function::call::literalArg>(arg));
+	}else{
+		std::cerr<<"Error: unknown internal argument type error"<<std::endl;
+		return ast::none_type;
+	}
+}
+
 bool checkTypeUsesValid(ast::context& context){
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> functions;
 	for(const auto& func : context.funcs){
@@ -25,6 +36,9 @@ bool checkTypeUsesValid(ast::context& context){
 				if(definedVars.contains(decl.name)){
 					std::cerr<<"Error: Redefintion of variable \""<<decl.name<<"\" in function \""<<func.name<<"\""<<std::endl;
 					errored = true;
+				}else if(decl.ty == ast::void_type){
+					std::cerr<<"Error: Cannot declare variable \""<<decl.name<<"\" in function \""<<func.name<<"\" with type void"<<std::endl;
+					errored = true;
 				}else{
 					definedVars[decl.name] = decl.ty;
 				}
@@ -34,8 +48,8 @@ bool checkTypeUsesValid(ast::context& context){
 
 				bool unableToDecernCallargTypes = false;
 				for(unsigned int i=0;i<call.args.size();i++){
-					if(!definedVars.contains(call.args[i])){
-						std::cerr<<"Error: Use of undefined variable \""<<call.args[i]<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
+					if(std::holds_alternative<ast::function::call::varNameArg>(call.args[i]) && !definedVars.contains(std::get<ast::function::call::varNameArg>(call.args[i]))){
+						std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::function::call::varNameArg>(call.args[i])<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
 						errored = true;
 						unableToDecernCallargTypes = true;
 						break;
@@ -52,7 +66,8 @@ bool checkTypeUsesValid(ast::context& context){
 					}
 					bool argsMatch = true;
 					for(unsigned int i=0;i<func.args.size();i++){
-						if(func.args[i].ty != definedVars[call.args[i]]){
+						ast::type varType = getArgumentType(definedVars, call.args[i]);
+						if(func.args[i].ty != varType){
 							argsMatch = false;
 							break;
 						}
@@ -67,7 +82,8 @@ bool checkTypeUsesValid(ast::context& context){
 					//there was no matching function! figure out why
 					std::cerr<<"Error: No function definition for \""<<call.name<<"\" matching "<<call.name<<"(";
 					for(unsigned int i=0;i<call.args.size();i++){
-						std::cerr<<ast::type_rmap(definedVars[call.args[i]]);
+						ast::type varType = getArgumentType(definedVars, call.args[i]);
+						std::cerr<<ast::type_rmap(varType);
 						if(i+1 < call.args.size())
 							std::cerr<<", ";
 					}
