@@ -21,6 +21,16 @@ namespace impl{
 	void println(bool val){
 		std::cout<<(val ? "true" : "false")<<std::endl;
 	}
+
+	void assign(int* dst, int src){
+		*dst = src;
+	}
+	void assign(float* dst, float src){
+		*dst = src;
+	}
+	void assign(bool* dst, bool src){
+		*dst = src;
+	}
 }
 }
 
@@ -45,11 +55,25 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return *arg;
 		}else if(std::holds_alternative<ast::function::call::literalArg>(call.args[argNum])){	
-			auto larg = std::get<ast::function::call::literalArg>(call.args[argNum]);
+			auto& larg = std::get<ast::function::call::literalArg>(call.args[argNum]);
 			return std::get<T>(larg);
 		}else{
 			std::cerr<<"Unknown interpreter type error"<<std::endl;
 			return T{};
+		}
+	};
+
+	auto getArgPtr = [&]<typename T>(unsigned int argNum) -> T*{
+		if(std::holds_alternative<ast::function::call::varNameArg>(call.args[argNum])){
+			auto carg = std::get<ast::function::call::varNameArg>(call.args[argNum]);
+			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
+			return arg;
+		}else{
+			//TODO: make this a compiletime error, NOT RUNTIME!
+			//probably add to functions check
+			//realyl should be generalized though (const time?)
+			std::cerr<<"Unknown interpreter type error"<<std::endl;
+			return nullptr;
 		}
 	};
 
@@ -65,6 +89,12 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 		impl::println(getArg.operator()<float>(0));
 	}else if(functionMatches("println", {ast::bool_type})){
 		impl::println(getArg.operator()<bool>(0));
+	}else if(functionMatches("assign", {ast::int_type, ast::int_type})){
+		impl::assign(getArgPtr.operator()<int>(0), getArg.operator()<int>(1));
+	}else if(functionMatches("assign", {ast::float_type, ast::float_type})){
+		impl::assign(getArgPtr.operator()<float>(0), getArg.operator()<float>(1));
+	}else if(functionMatches("assign", {ast::bool_type, ast::bool_type})){
+		impl::assign(getArgPtr.operator()<bool>(0), getArg.operator()<bool>(1));
 	}else{
 		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
 	}

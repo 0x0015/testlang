@@ -7,21 +7,21 @@ void addPrints(ast::context& context){
 	int_print.ty = ast::void_type;
 	int_print.args = {{ast::int_type, "val"}};
 	int_print.builtin = true;
-	context.funcs.push_back(int_print);
+	addBuiltin(context, int_print);
 
 	ast::function float_print;
 	float_print.name = "print";
 	float_print.ty = ast::void_type;
 	float_print.args = {{ast::float_type, "val"}};
 	float_print.builtin = true;
-	context.funcs.push_back(float_print);
+	addBuiltin(context, float_print);
 
 	ast::function bool_print;
 	bool_print.name = "print";
 	bool_print.ty = ast::void_type;
 	bool_print.args = {{ast::bool_type, "val"}};
 	bool_print.builtin = true;
-	context.funcs.push_back(bool_print);
+	addBuiltin(context, bool_print);
 
 	//println
 	ast::function int_println;
@@ -29,19 +29,19 @@ void addPrints(ast::context& context){
 	int_println.ty = ast::void_type;
 	int_println.args = {{ast::int_type, "val"}};
 	int_println.builtin = true;
-	context.funcs.push_back(int_println);
+	addBuiltin(context, int_println);
 
 	ast::function float_println;
 	float_println.name = "println";
 	float_println.ty = ast::void_type;
 	float_println.args = {{ast::float_type, "val"}};
 	float_println.builtin = true;
-	context.funcs.push_back(float_println);
+	addBuiltin(context, float_println);
 
 	ast::function bool_println;
 	bool_println.name = "println";
 	bool_println.ty = ast::void_type;
 	bool_println.args = {{ast::bool_type, "val"}};
 	bool_println.builtin = true;
-	context.funcs.push_back(bool_println);
+	addBuiltin(context, bool_println);
 }

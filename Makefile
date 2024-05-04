@@ -2,6 +2,7 @@ OBJS	= main.cpp.o\
 	  ast.cpp.o \
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
+	  builtins/assignments.cpp.o \
 	  functionChecker.cpp.o \
 	  typeChecker.cpp.o \
 	  interpreter/interpreter.cpp.o \
