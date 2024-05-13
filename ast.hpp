@@ -4,39 +4,9 @@
 #include <variant>
 #include <optional>
 
+#include "ast_type.hpp"
+
 namespace ast{
-	enum type{
-		none_type,
-		void_type,
-		int_type,
-		float_type,
-		bool_type
-	};
-	constexpr inline type type_map(const std::string_view type){
-		if(type == "void")
-			return void_type;
-		if(type == "int")
-			return int_type;
-		if(type == "float")
-			return float_type;
-		if(type == "bool")
-			return bool_type;
-		return none_type;
-	}
-	constexpr inline std::string_view type_rmap(type ty){
-		switch(ty){
-			case void_type:
-				return "void";
-			case int_type:
-				return "int";
-			case float_type:
-				return "float";
-			case bool_type:
-				return "bool";
-			default:
-				return "none";
-		}
-	}
 	struct function{
 		type ty;
 		std::string name;

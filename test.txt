@@ -18,4 +18,9 @@ void main(){
 	println(-3.14);
 	assign(test, 3.1415);
 	println(test);
+	(float, int) val1;
+	((float, int), bool) val2;
+	//() val3; //errors, as it's not a type
+	[float] val4;
+	//float[5] val5; //really I want this syntax.  I just don't know how to get the parser to do it
 }

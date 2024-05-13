@@ -10,22 +10,7 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 	for(const auto& state : func.body){
 		if(std::holds_alternative<ast::function::declaration>(state)){
 			const auto& decl = std::get<ast::function::declaration>(state);
-			switch(decl.ty){
-				case ast::void_type:
-					addVariableToInterpreterStack(M, decl.name, 0);
-					break;
-				case ast::int_type://assuming int32
-					addVariableToInterpreterStack(M, decl.name, 4);
-					break;
-				case ast::bool_type:
-					addVariableToInterpreterStack(M, decl.name, 1);
-					break;
-				case ast::float_type://assuming float32
-					addVariableToInterpreterStack(M, decl.name, 4);
-					break;
-				default:
-					std::cerr<<"Creating variable of unknown (none) type!"<<std::endl;
-			}
+			addVariableToInterpreterStack(M, decl.name, decl.ty.getSize());
 		}else if(std::holds_alternative<ast::function::call>(state)){
 			const auto& call = std::get<ast::function::call>(state);
 			if(call.validatedDef.value().get().builtin){

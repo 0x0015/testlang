@@ -24,7 +24,7 @@ int main(){
 		[[maybe_unused]] auto result = lexy::parse_as_tree<grammer::production>(tree, input, lexy_ext::report_error);
 		lexy::visualize(stdout, tree, {lexy::visualize_fancy});
 	}
-	auto result = lexy::parse<grammer::production>(input, lexy_ext::report_error);	
+	auto result = lexy::parse<grammer::production>(input, lexy_ext::report_error);
 
 	bool errored = false;
 	errored = errored || result.is_error();
@@ -32,6 +32,7 @@ int main(){
 	if(!result.has_value()){
 		return 1;//unrecoverable state (no parsed output to work off of)
 	}
+	
 
 	auto val = result.value();
 	addBuiltins(val);
@@ -44,6 +45,7 @@ int main(){
 		val.dump();
 		interpreter::interpret(val, "main");
 	}
+	
 
 	return errored;
 }

@@ -1,8 +1,8 @@
 #pragma once
 #include <lexy/dsl.hpp>
 #include <lexy/callback.hpp>
-
-#include "type.hpp"
+#include "../ast.hpp"
+#include "id.hpp"
 
 namespace{
 namespace grammer{

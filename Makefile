@@ -1,5 +1,6 @@
 OBJS	= main.cpp.o\
 	  ast.cpp.o \
+	  ast_type.cpp.o \
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
 	  builtins/assignments.cpp.o \
