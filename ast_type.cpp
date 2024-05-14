@@ -6,7 +6,7 @@
 #include <lexy/input/string_input.hpp>
 #include <lexy_ext/report_error.hpp>
 
-ast::type ast::type_map(const std::string_view type){
+ast::type ast::type::fromString(const std::string_view type){
 	auto input = lexy::string_input<lexy::utf8_encoding>(type);
 	auto result = lexy::parse<grammer::type_t>(input, lexy_ext::report_error);
 
@@ -17,9 +17,9 @@ ast::type ast::type_map(const std::string_view type){
 	}
 }
 
-std::string ast::type_rmap(const type& ty){
-	if(std::holds_alternative<builtin_type>(ty.ty)){
-		switch(std::get<builtin_type>(ty.ty)){
+std::string ast::type::toString() const{
+	if(std::holds_alternative<builtin_type>(ty)){
+		switch(std::get<builtin_type>(ty)){
 			case void_type:
 				return "void";
 			case int_type:
@@ -31,14 +31,17 @@ std::string ast::type_rmap(const type& ty){
 			default:
 				return "none";
 		}
-	}else if(std::holds_alternative<array_type>(ty.ty)){
-		const auto& array = std::get<array_type>(ty.ty);
-		return type_rmap(*array.ty) + "[]";
-	}else if(std::holds_alternative<tuple_type>(ty.ty)){
-		const auto& tuple = std::get<tuple_type>(ty.ty);
+	}else if(std::holds_alternative<array_type>(ty)){
+		const auto& array = std::get<array_type>(ty);
+		return array.ty->toString() + "[" + std::to_string(array.length) + "]";
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
 		std::string output = "(";
-		for(const auto& o : tuple)
-			output += type_rmap(o);
+		for(unsigned int i=0;i<tuple.size();i++){
+			output += tuple[i].toString();
+			if(i+1 < tuple.size())
+				output += ", ";
+		}
 		output += ")";
 		return output;
 	}else{
@@ -48,25 +51,25 @@ std::string ast::type_rmap(const type& ty){
 }
 
 unsigned int ast::type::getSize() const{
-	if(std::holds_alternative<ast::builtin_type>(ty)){
-		switch(std::get<ast::builtin_type>(ty)){
-			case ast::void_type:
+	if(std::holds_alternative<ast::type::builtin_type>(ty)){
+		switch(std::get<ast::type::builtin_type>(ty)){
+			case ast::type::void_type:
 				return 0;
-			case ast::int_type://assuming int32
+			case ast::type::int_type://assuming int32
 				return 4;
-			case ast::bool_type:
+			case ast::type::bool_type:
 				return 1;
-			case ast::float_type://assuming float32
+			case ast::type::float_type://assuming float32
 				return 4;
 			default:
 				std::cerr<<"Error: Encountered builtin type of unknown size! (all should be known)"<<std::endl;
 				return 0;
 		}
-	}else if(std::holds_alternative<ast::array_type>(ty)){
-		const auto& array_ty = std::get<ast::array_type>(ty);
+	}else if(std::holds_alternative<ast::type::array_type>(ty)){
+		const auto& array_ty = std::get<ast::type::array_type>(ty);
 		return array_ty.ty->getSize() * array_ty.length;
-	}else if(std::holds_alternative<ast::tuple_type>(ty)){
-		const auto& tuple_ty = std::get<ast::tuple_type>(ty);
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty)){
+		const auto& tuple_ty = std::get<ast::type::tuple_type>(ty);
 		unsigned int output = 0;
 		for(const auto& o : tuple_ty){
 			output += o.getSize();

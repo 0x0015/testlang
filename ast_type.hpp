@@ -4,23 +4,22 @@
 #include <variant>
 
 namespace ast{
-	struct type;
-	enum builtin_type{
-		none_type,
-		void_type,
-		int_type,
-		float_type,
-		bool_type
-	};
-	struct array_type{
-		std::shared_ptr<type> ty;
-		unsigned int length;
-		array_type() = default;
-		array_type(const type& t_ty) : ty(std::make_shared<type>(t_ty)){}
-		array_type(const type& t_ty, unsigned int len) : ty(std::make_shared<type>(t_ty)), length(len){}
-	};
-	using tuple_type = std::vector<type>;
 	struct type{
+		enum builtin_type{
+			none_type,
+			void_type,
+			int_type,
+			float_type,
+			bool_type
+		};
+		struct array_type{
+			std::shared_ptr<type> ty;
+			unsigned int length;
+			array_type() = default;
+			array_type(const type& t_ty) : ty(std::make_shared<type>(t_ty)){}
+			array_type(const type& t_ty, unsigned int len) : ty(std::make_shared<type>(t_ty)), length(len){}
+		};
+		using tuple_type = std::vector<type>;
 		std::variant<builtin_type, array_type, tuple_type> ty;
 		type() = default;
 		type(builtin_type builtin_ty) : ty(builtin_ty){}
@@ -49,7 +48,7 @@ namespace ast{
 			return false;
 		}
 		unsigned int getSize() const;
+		static type fromString(const std::string_view type);
+		std::string toString() const;
 	};
-	type type_map(const std::string_view type);
-	std::string type_rmap(const type& ty);
 }

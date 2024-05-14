@@ -35,7 +35,7 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 void interpreter::interpret(const ast::context& context, const std::string_view entryPoint){
 	std::optional<std::reference_wrapper<const ast::function>> entry;
 	for(const auto& func : context.funcs){
-		if(func.name == entryPoint && func.ty == ast::void_type && func.args.size() == 0){
+		if(func.name == entryPoint && func.ty == ast::type::void_type && func.args.size() == 0){
 			entry = std::cref(func);
 			break;
 		}

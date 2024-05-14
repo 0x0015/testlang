@@ -5,6 +5,7 @@
 #include <optional>
 
 #include "ast_type.hpp"
+#include "ast_literal.hpp"
 
 namespace ast{
 	struct function{
@@ -22,9 +23,7 @@ namespace ast{
 		struct call{
 			std::string name;
 			using varNameArg = std::string;
-			using literalArg = std::variant<int, float, bool>;
-			using argument = std::variant<varNameArg, literalArg>;
-			static type getLiteralType(const literalArg& lit);
+			using argument = std::variant<varNameArg, literal>;
 			std::vector<argument> args;
 			std::optional<std::reference_wrapper<const function>> validatedDef = std::nullopt;
 		};

@@ -54,9 +54,10 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 			auto carg = std::get<ast::function::call::varNameArg>(call.args[argNum]);
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return *arg;
-		}else if(std::holds_alternative<ast::function::call::literalArg>(call.args[argNum])){	
-			auto& larg = std::get<ast::function::call::literalArg>(call.args[argNum]);
-			return std::get<T>(larg);
+		}else if(std::holds_alternative<ast::literal>(call.args[argNum])){	
+			auto& larg = std::get<ast::literal>(call.args[argNum]);
+			//TODO: make this handle more than builtin types
+			return std::get<T>(std::get<ast::literal::builtin_literal>(larg.value));
 		}else{
 			std::cerr<<"Unknown interpreter type error"<<std::endl;
 			return T{};
@@ -77,23 +78,23 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 		}
 	};
 
-	if(functionMatches("print", {ast::int_type})){
+	if(functionMatches("print", {ast::type::int_type})){
 		impl::print(getArg.operator()<int>(0));
-	}else if(functionMatches("print", {ast::float_type})){
+	}else if(functionMatches("print", {ast::type::float_type})){
 		impl::print(getArg.operator()<float>(0));
-	}else if(functionMatches("print", {ast::bool_type})){
+	}else if(functionMatches("print", {ast::type::bool_type})){
 		impl::print(getArg.operator()<bool>(0));
-	}else if(functionMatches("println", {ast::int_type})){
+	}else if(functionMatches("println", {ast::type::int_type})){
 		impl::println(getArg.operator()<int>(0));
-	}else if(functionMatches("println", {ast::float_type})){
+	}else if(functionMatches("println", {ast::type::float_type})){
 		impl::println(getArg.operator()<float>(0));
-	}else if(functionMatches("println", {ast::bool_type})){
+	}else if(functionMatches("println", {ast::type::bool_type})){
 		impl::println(getArg.operator()<bool>(0));
-	}else if(functionMatches("assign", {ast::int_type, ast::int_type})){
+	}else if(functionMatches("assign", {ast::type::int_type, ast::type::int_type})){
 		impl::assign(getArgPtr.operator()<int>(0), getArg.operator()<int>(1));
-	}else if(functionMatches("assign", {ast::float_type, ast::float_type})){
+	}else if(functionMatches("assign", {ast::type::float_type, ast::type::float_type})){
 		impl::assign(getArgPtr.operator()<float>(0), getArg.operator()<float>(1));
-	}else if(functionMatches("assign", {ast::bool_type, ast::bool_type})){
+	}else if(functionMatches("assign", {ast::type::bool_type, ast::type::bool_type})){
 		impl::assign(getArgPtr.operator()<bool>(0), getArg.operator()<bool>(1));
 	}else{
 		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;

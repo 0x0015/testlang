@@ -21,6 +21,8 @@ void main(){
 	(float, int) val1;
 	((float, int), bool) val2;
 	//() val3; //errors, as it's not a type
-	[float] val4;
+	float[5] val4;
 	//float[5] val5; //really I want this syntax.  I just don't know how to get the parser to do it
+	assign(val4, [3.14, 54.4]);
+	assign(val1, (3.14, 7));
 }

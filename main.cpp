@@ -14,16 +14,17 @@
 #include "interpreter/interpreter.hpp"
 
 int main(){
-	auto file = lexy::read_file<lexy::utf8_encoding>("test.txt");
+	auto file = lexy::read_file<lexy::utf8_encoding>("simpleTest.txt");
 	if(!file)
 		return 1;
 	auto input = file.buffer();
 
-	lexy::parse_tree_for<decltype(input)> tree;
-	{
-		[[maybe_unused]] auto result = lexy::parse_as_tree<grammer::production>(tree, input, lexy_ext::report_error);
-		lexy::visualize(stdout, tree, {lexy::visualize_fancy});
-	}
+	//lexy::parse_tree_for<decltype(input)> tree;
+	//{
+	//	[[maybe_unused]] auto result = lexy::parse_as_tree<grammer::production>(tree, input, lexy_ext::report_error);
+	//	lexy::visualize(stdout, tree, {lexy::visualize_fancy});
+	//}
+	lexy::trace<grammer::production>(stdout, input);
 	auto result = lexy::parse<grammer::production>(input, lexy_ext::report_error);
 
 	bool errored = false;

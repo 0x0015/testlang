@@ -5,11 +5,11 @@
 ast::type getArgumentType(std::unordered_map<std::string, ast::type>& definedVars, const ast::function::call::argument& arg){
 	if(std::holds_alternative<ast::function::call::varNameArg>(arg)){
 		return definedVars[std::get<ast::function::call::varNameArg>(arg)];
-	}else if(std::holds_alternative<ast::function::call::literalArg>(arg)){
-		return ast::function::call::getLiteralType(std::get<ast::function::call::literalArg>(arg));
+	}else if(std::holds_alternative<ast::literal>(arg)){
+		return std::get<ast::literal>(arg).ty;
 	}else{
 		std::cerr<<"Error: unknown internal argument type error"<<std::endl;
-		return ast::none_type;
+		return ast::type::none_type;
 	}
 }
 
@@ -36,7 +36,7 @@ bool checkTypeUsesValid(ast::context& context){
 				if(definedVars.contains(decl.name)){
 					std::cerr<<"Error: Redefintion of variable \""<<decl.name<<"\" in function \""<<func.name<<"\""<<std::endl;
 					errored = true;
-				}else if(decl.ty == ast::void_type){
+				}else if(decl.ty == ast::type::void_type){
 					std::cerr<<"Error: Cannot declare variable \""<<decl.name<<"\" in function \""<<func.name<<"\" with type void"<<std::endl;
 					errored = true;
 				}else{
@@ -83,7 +83,7 @@ bool checkTypeUsesValid(ast::context& context){
 					std::cerr<<"Error: No function definition for \""<<call.name<<"\" matching "<<call.name<<"(";
 					for(unsigned int i=0;i<call.args.size();i++){
 						ast::type varType = getArgumentType(definedVars, call.args[i]);
-						std::cerr<<ast::type_rmap(varType);
+						std::cerr<<varType.toString();
 						if(i+1 < call.args.size())
 							std::cerr<<", ";
 					}
@@ -91,9 +91,9 @@ bool checkTypeUsesValid(ast::context& context){
 					std::cerr<<"Candidates:"<<std::endl;
 					for(auto it = funcs.first; it != funcs.second; ++it){
 						const auto& func = it->second.get();
-						std::cerr<<"\t"<<ast::type_rmap(func.ty)<<" "<<func.name<<"(";
+						std::cerr<<"\t"<<func.ty.toString()<<" "<<func.name<<"(";
 						for(unsigned int i=0;i<func.args.size();i++){
-							std::cerr<<ast::type_rmap(func.args[i].ty);
+							std::cerr<<func.args[i].ty.toString();
 							if(i+1 < func.args.size())
 								std::cerr<<", ";
 						}

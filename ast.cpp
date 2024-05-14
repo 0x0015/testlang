@@ -1,39 +1,23 @@
 #include "ast.hpp"
 
-ast::type ast::function::call::getLiteralType(const literalArg& lit){
-	if(std::holds_alternative<int>(lit)){
-		return ast::int_type;
-	}else if(std::holds_alternative<float>(lit)){
-		return ast::float_type;
-	}else if(std::holds_alternative<bool>(lit)){
-		return ast::bool_type;
-	}else{
-		return none_type;
-	}
-}
-
-void printLiteralView(const ast::function::call::literalArg& val){
-	std::cout<<"<literal> ";
-}
-
 void ast::function::dump() const{
-	std::cout<<type_rmap(ty)<<" "<<name<<"("<<std::endl;
+	std::cout<<ty.toString()<<" "<<name<<"("<<std::endl;
 	for(const auto& arg : args){
-		std::cout<<"\t"<<type_rmap(arg.ty)<<" "<<arg.name<<std::endl;
+		std::cout<<"\t"<<arg.ty.toString()<<" "<<arg.name<<std::endl;
 	}
 	std::cout<<"){"<<std::endl;
 	for(const auto& state : body){
 		if(std::holds_alternative<declaration>(state)){
 			const auto& decl = std::get<declaration>(state);
-			std::cout<<"\tDeclaration: "<<type_rmap(decl.ty)<<" "<<decl.name<<std::endl;
+			std::cout<<"\tDeclaration: "<<decl.ty.toString()<<" "<<decl.name<<std::endl;
 		}else if(std::holds_alternative<call>(state)){
 			const auto& cll = std::get<call>(state);
 			std::cout<<"\tCall: "<<cll.name<<"( ";
 			for(const auto& arg : cll.args){
 				if(std::holds_alternative<call::varNameArg>(arg)){
 					std::cout<<std::get<call::varNameArg>(arg)<<" ";
-				}else if(std::holds_alternative<call::literalArg>(arg)){
-					printLiteralView(std::get<call::literalArg>(arg));
+				}else if(std::holds_alternative<ast::literal>(arg)){
+					std::cout<<std::get<ast::literal>(arg).toString()<<" ";
 				}
 			}
 			std::cout<<")";
