@@ -1,46 +1,38 @@
 #include <iostream>
-#include "parse/parse.hpp"
-
-#include <lexy/action/parse_as_tree.hpp>
-#include <lexy/action/parse.hpp>
-#include <lexy/action/trace.hpp>
-#include <lexy/input/file.hpp>
-#include <lexy_ext/report_error.hpp>
-
-#include "builtins/builtins.hpp"
+#include "parse_new/parse.hpp"
 #include "functionChecker.hpp"
 #include "typeChecker.hpp"
+#include "builtins/builtins.hpp"
 
 #include "interpreter/interpreter.hpp"
 
 int main(){
-	auto file = lexy::read_file<lexy::utf8_encoding>("simpleTest.txt");
-	if(!file)
-		return 1;
-	auto input = file.buffer();
+	parser parse;
+	parse.files.push_back("simpleTest.txt");
+	//parse.files.push_back("test.txt");
 
-	//lexy::parse_tree_for<decltype(input)> tree;
-	//{
-	//	[[maybe_unused]] auto result = lexy::parse_as_tree<grammer::production>(tree, input, lexy_ext::report_error);
-	//	lexy::visualize(stdout, tree, {lexy::visualize_fancy});
-	//}
-	lexy::trace<grammer::production>(stdout, input);
-	auto result = lexy::parse<grammer::production>(input, lexy_ext::report_error);
+	auto parseRes = parse.parseAll();
+	if(parseRes) addBuiltins(*parseRes);
 
 	bool errored = false;
-	errored = errored || result.is_error();
-
-	if(!result.has_value()){
-		return 1;//unrecoverable state (no parsed output to work off of)
-	}
 	
+	if(!parseRes) errored = true;
+	errored = errored || !checkFunctionsDefined(*parseRes);
+	errored = errored || !checkConflictingFunctionDefinitions(*parseRes);
+	errored = errored || !checkTypeUsesValid(*parseRes);
+
+	if(errored){
+		std::cout<<"An error has occurred.  Aborting."<<std::endl;
+		return -1;
+	}
+
+	parseRes->dump();
+	interpreter::interpret(*parseRes, "main");
+	/*
 
 	auto val = result.value();
 	addBuiltins(val);
 
-	errored = errored || !checkFunctionsDefined(val);
-	errored = errored || !checkConflictingFunctionDefinitions(val);
-	errored = errored || !checkTypeUsesValid(val);
 
 	if(!errored){
 		val.dump();
@@ -49,4 +41,5 @@ int main(){
 	
 
 	return errored;
+	*/
 }

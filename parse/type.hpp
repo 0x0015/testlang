@@ -9,7 +9,7 @@ namespace{
 namespace grammer{
 	namespace dsl = lexy::dsl;
 
-	struct type_t{
+	struct type_t : lexy::expression_production{
 		static constexpr auto recur_type = dsl::recurse<type_t>;
 		struct builtin_type_t{
 			struct void_type{
@@ -38,49 +38,25 @@ namespace grammer{
 			static constexpr auto rule = dsl::parenthesized(dsl::list(recur_type, dsl::sep(dsl::comma)));
 			static constexpr auto value = lexy::as_list<ast::type::tuple_type>;
 		};
-		static constexpr auto tuple_type = dsl::p<tuple_type_t>;	
-		struct array_type_t{
-			struct array_type_impl_t : lexy::scan_production<int>{
-				static constexpr auto isBuiltin = LEXY_LIT("void") | LEXY_LIT("int") | LEXY_LIT("float") | LEXY_LIT("bool");
-				template<typename Context, typename Reader> static scan_result scan(lexy::rule_scanner<Context, Reader>& scanner){
-					std::cout<<"in scan"<<std::endl;
-					if(!scanner.branch(LEXY_LIT("int"))){
-					    if(!scanner.branch(LEXY_LIT("(")))
-					        return lexy::scan_failed;
-					    int parens = 1;
-					    std::string tupleToParse = "(";
-					    while(parens > 0){
-					        if(!scanner){
-					            std::cout<<"Scanner never found end of parenthases"<<std::endl;
-					            return lexy::scan_failed;
-					        }
-					        if(scanner.branch(LEXY_LIT("("))){
-					            parens++;
-					        }else if(scanner.branch(LEXY_LIT(")"))){
-					            parens--;
-					        }else if(scanner.branch(dsl::ascii::character)){
-					            //none
-					        }else{
-					            std::cout<<"Scan failed for unknown reason"<<std::endl;
-					            return lexy::scan_failed;
-					        }
-					    }
-					}
-					if(!scanner.branch(dsl::square_bracketed(dsl::digits<>)))
-					    return lexy::scan_failed;
-					do{} while(scanner.branch(dsl::square_bracketed(dsl::digits<>)));
-					return 0;
-				}
-			};
-			static constexpr auto rule = dsl::peek(dsl::p<array_type_impl_t>) >> builtin_type;
-			static constexpr auto value = lexy::construct<ast::type::builtin_type>;
+		static constexpr auto tuple_type = dsl::p<tuple_type_t>;
+		static constexpr auto atom = builtin_type | tuple_type;
+		struct array_type_t : dsl::postfix_op{
+			//static constexpr auto rule = dsl::peek(LEXY_LIT("array")) >> builtin_type;
+			//static constexpr auto value = lexy::construct<ast::type::builtin_type>;
+			static constexpr auto op = dsl::op(dsl::square_bracketed(dsl::digits<>));
+			using operand = dsl::atom;
+			static constexpr auto value = lexy::callback<ast::type>([](const ast::type& value){return value;},
+									      [](const ast::type& value, lexy::op<op>){return value;},
+									      [](){});
 		};
-		static constexpr auto array_type = dsl::p<array_type_t>;
+		using array_type = array_type_t;
+
+		using operation = array_type;
 		
 
-		static constexpr auto rule = array_type | builtin_type | tuple_type;
+		//static constexpr auto rule = array_type | builtin_type | tuple_type;
 		static constexpr auto value = lexy::construct<ast::type>;
 	};
-	constexpr auto type = dsl::p<type_t>;
+	constexpr auto type = dsl::peek(dsl::p<type_t>) >> dsl::p<type_t>;
 }
 }

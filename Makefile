@@ -1,4 +1,12 @@
 OBJS	= main.cpp.o\
+	  parse_new/fileDetails.cpp.o \
+	  parse_new/parseUtil.cpp.o \
+	  parse_new/parse.cpp.o \
+	  parse_new/tokenize/basicTokenize.cpp.o \
+	  parse_new/tokenize/mediumTokenize.cpp.o \
+	  parse_new/parse/parseContext.cpp.o \
+	  parse_new/parse/parseFunction.cpp.o \
+	  parse_new/parse/parseType.cpp.o \
 	  ast.cpp.o \
 	  ast_type.cpp.o \
 	  ast_literal.cpp.o \

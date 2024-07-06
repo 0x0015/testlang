@@ -1,3 +1,11 @@
-void test(){
-	int[5] myVar;
+//no'ther comment here
+void main(){
+//comment here
+	int myVar; //this is a comment
+	/*another comment*/
+	float anotherVar;
+	println(myVar);
+}
+
+int test2(float testArg){
 }

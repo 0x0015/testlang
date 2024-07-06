@@ -15,7 +15,7 @@ namespace grammer{
 	struct function_decl_t{
 		struct arguments_t{
 			struct argument_t{
-				static constexpr auto rule = type >> identifier;
+				static constexpr auto rule = type + identifier;
 				static constexpr auto value = lexy::construct<ast::function::argument>;
 			};
 			static constexpr auto argument = dsl::p<argument_t>;
@@ -26,7 +26,7 @@ namespace grammer{
 		struct body_t{
 			struct statement_t{
 				struct declaration_t{
-					static constexpr auto rule = type >> identifier;
+					static constexpr auto rule = type + identifier;
 					static constexpr auto value = lexy::construct<ast::function::declaration>;
 				};
 				static constexpr auto declaration = dsl::p<declaration_t>;

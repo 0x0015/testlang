@@ -2,11 +2,14 @@
 #include <iostream>
 #include "parse/type.hpp"
 
+/*
 #include <lexy/action/parse.hpp>
 #include <lexy/input/string_input.hpp>
 #include <lexy_ext/report_error.hpp>
+*/
 
 ast::type ast::type::fromString(const std::string_view type){
+	/*
 	auto input = lexy::string_input<lexy::utf8_encoding>(type);
 	auto result = lexy::parse<grammer::type_t>(input, lexy_ext::report_error);
 
@@ -15,6 +18,8 @@ ast::type ast::type::fromString(const std::string_view type){
 	}else{
 		return none_type;
 	}
+	*/
+	return none_type;
 }
 
 std::string ast::type::toString() const{
