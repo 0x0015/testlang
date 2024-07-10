@@ -21,6 +21,18 @@ template<class T, class Arr> std::optional<unsigned int> findInList(const T& val
 }
 
 std::vector<std::string_view> strSplit(std::string_view s, std::string_view delimiter);
+
+namespace PARSE_INTERNAL__{
+	template<class T> struct parseRes{
+		T val;
+		int toksConsumed;
+	};
+}
+template<class T> using parseRes = std::optional<PARSE_INTERNAL__::parseRes<T>>;
+template<class T> constexpr parseRes<T> makeParseRes(const T& val, int consumed){
+	return PARSE_INTERNAL__::parseRes<T>{val, consumed};
+}
+
 #define DEBUG_PARSE
 #ifdef DEBUG_PARSE
 #include <iostream>

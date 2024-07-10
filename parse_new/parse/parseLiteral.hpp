@@ -5,5 +5,4 @@
 
 class mediumToken;
 
-parseRes<ast::type> parseType(std::span<const mediumToken> tokens);
-
+parseRes<ast::literal> parseLiteral(std::span<const mediumToken> tokens);

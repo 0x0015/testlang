@@ -7,6 +7,7 @@ OBJS	= main.cpp.o\
 	  parse_new/parse/parseContext.cpp.o \
 	  parse_new/parse/parseFunction.cpp.o \
 	  parse_new/parse/parseType.cpp.o \
+	  parse_new/parse/parseLiteral.cpp.o \
 	  ast.cpp.o \
 	  ast_type.cpp.o \
 	  ast_literal.cpp.o \

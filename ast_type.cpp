@@ -1,25 +1,20 @@
 #include "ast_type.hpp"
 #include <iostream>
-#include "parse/type.hpp"
-
-/*
-#include <lexy/action/parse.hpp>
-#include <lexy/input/string_input.hpp>
-#include <lexy_ext/report_error.hpp>
-*/
+#include "parse_new/parse/parseType.hpp"
+#include "parse_new/tokenize/basicTokenize.hpp"
+#include "parse_new/tokenize/mediumTokenize.hpp"
 
 ast::type ast::type::fromString(const std::string_view type){
-	/*
-	auto input = lexy::string_input<lexy::utf8_encoding>(type);
-	auto result = lexy::parse<grammer::type_t>(input, lexy_ext::report_error);
-
-	if(result.has_value()){
-		return result.value();
-	}else{
+	auto basicToks = basicTokenizeString(type);
+	if(!basicToks)
 		return none_type;
-	}
-	*/
-	return none_type;
+	auto mediumToks = parseBrackets(*basicToks);
+	if(!mediumToks)
+		return none_type;
+	auto typeTry = parseType(*mediumToks);
+	if(!typeTry)
+		return none_type;
+	return typeTry->val;
 }
 
 std::string ast::type::toString() const{

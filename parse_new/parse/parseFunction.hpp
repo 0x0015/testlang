@@ -1,10 +1,10 @@
 #pragma once
 #include "../../ast.hpp"
-#include <optional>
 #include <span>
+#include "../parseUtil.hpp"
 
 class mediumToken;
 
-std::optional<std::pair<ast::function, int>> parseFunction(std::span<const mediumToken> tokens);
-std::optional<std::pair<std::vector<ast::function::argument>, int>> parseFunctionArgs(std::span<const mediumToken> tokens);
-std::optional<std::pair<std::vector<ast::function::statement>, int>> parseFunctionBody(std::span<const mediumToken> tokens);
+parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens);
+parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const mediumToken> tokens);
+parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<const mediumToken> tokens);

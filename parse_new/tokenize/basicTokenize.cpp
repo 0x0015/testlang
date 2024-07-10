@@ -102,8 +102,11 @@ std::optional<std::vector<basicToken>> basicTokenizeFile(const std::string_view 
 	auto contents = readFile(filename);
 	if(!contents)
 		return std::nullopt;
+	return basicTokenizeString(*contents, filename);
+}
 
-	auto commentAndStringed = parseStringsAndComments(*contents);
+std::optional<std::vector<basicToken>> basicTokenizeString(const std::string_view contents, const std::string_view filename){
+	auto commentAndStringed = parseStringsAndComments(contents);
 
 	if(!commentAndStringed)
 		return std::nullopt;

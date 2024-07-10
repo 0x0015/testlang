@@ -2,14 +2,15 @@
 #include "../tokenize/mediumTokenize.hpp"
 #include "parseType.hpp"
 #include "../parseUtil.hpp"
+#include "parseLiteral.hpp"
 
-std::optional<std::pair<ast::function, int>> parseFunction(std::span<const mediumToken> tokens){
+parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	//type
 	auto ty = parseType(tokens);
 	if(!ty)
 		return std::nullopt;
-	tokens = tokens.subspan(ty->second);
-	int offset = ty->second;
+	tokens = tokens.subspan(ty->toksConsumed);
+	int offset = ty->toksConsumed;
 	parse_debug_print("function parsed type");
 	//name
 	if(tokens.empty())
@@ -25,20 +26,20 @@ std::optional<std::pair<ast::function, int>> parseFunction(std::span<const mediu
 	if(!args)
 		return std::nullopt;
 
-	tokens = tokens.subspan(args->second);
-	offset += args->second;
+	tokens = tokens.subspan(args->toksConsumed);
+	offset += args->toksConsumed;
 	parse_debug_print("function parsed args");
 	//body
 	const auto& body = parseFunctionBody(tokens);
 	if(!body)
 		return std::nullopt;
 	parse_debug_print("function parsed body");
-	offset += body->second;
+	offset += body->toksConsumed;
 
-	return std::make_pair(ast::function{ty->first, name, args->first, body->first}, offset);
+	return makeParseRes(ast::function{ty->val, name, args->val, body->val}, offset);
 }
 
-std::optional<std::pair<std::vector<ast::function::argument>, int>> parseFunctionArgs(std::span<const mediumToken> tokens){
+parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
@@ -55,7 +56,7 @@ std::optional<std::pair<std::vector<ast::function::argument>, int>> parseFunctio
 		auto ty = parseType(lTokens);
 		if(!ty)
 			return std::nullopt;
-		lTokens = lTokens.subspan(ty->second);
+		lTokens = lTokens.subspan(ty->toksConsumed);
 		parse_debug_print("function arg parsed type");
 		//name
 		if(lTokens.empty())
@@ -75,20 +76,20 @@ std::optional<std::pair<std::vector<ast::function::argument>, int>> parseFunctio
 			parse_debug_print("function arg parsed comma");
 		}
 
-		output.push_back(ast::function::argument{ty->first, name.val});
+		output.push_back(ast::function::argument{ty->val, name.val});
 	}
 
-	return std::make_pair(output, 1);
+	return makeParseRes(output, 1);
 }
 
-std::optional<std::pair<ast::function::declaration, int>> parseFunctionBodyDeclaration(std::span<const mediumToken> tokens){
+parseRes<ast::function::declaration> parseFunctionBodyDeclaration(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	auto tyTry = parseType(tokens);
 	if(!tyTry)
 		return std::nullopt;
-	int outputSize = tyTry->second;
-	tokens = tokens.subspan(tyTry->second);
+	int outputSize = tyTry->toksConsumed;
+	tokens = tokens.subspan(tyTry->toksConsumed);
 
 	if(tokens.empty())
 		return std::nullopt;
@@ -106,19 +107,23 @@ std::optional<std::pair<ast::function::declaration, int>> parseFunctionBodyDecla
 		return std::nullopt;
 	outputSize++;
 	//don't need to shrink tokens for the last one
-	return std::make_pair(ast::function::declaration{tyTry->first, name}, outputSize);
+	return makeParseRes(ast::function::declaration{tyTry->val, name}, outputSize);
 }
 
-std::optional<std::pair<ast::function::call::argument, int>> parseFunctionCallArg(std::span<const mediumToken> tokens){
+parseRes<ast::function::call::argument> parseFunctionCallArg(std::span<const mediumToken> tokens){
+	auto literalTry = parseLiteral(tokens);
+	if(literalTry){
+		return makeParseRes(ast::function::call::argument(literalTry->val), literalTry->toksConsumed);
+	}
 	if(tokens.empty())
 		return std::nullopt;
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	const auto& name = std::get<basicToken>(tokens.front().value).val;
-	return std::make_pair(ast::function::call::argument(name), 1);
+	return makeParseRes(ast::function::call::argument(name), 1);
 }
 
-std::optional<std::pair<ast::function::call, int>> parseFunctionBodyCall(std::span<const mediumToken> tokens){
+parseRes<ast::function::call> parseFunctionBodyCall(std::span<const mediumToken> tokens){
 	
 	if(tokens.size() < 3)
 		return std::nullopt;
@@ -145,8 +150,8 @@ std::optional<std::pair<ast::function::call, int>> parseFunctionBodyCall(std::sp
 		auto argTry = parseFunctionCallArg(tList);
 		if(!argTry)
 			return std::nullopt;
-		args.push_back(argTry->first);
-		tList = tList.subspan(argTry->second);
+		args.push_back(argTry->val);
+		tList = tList.subspan(argTry->toksConsumed);
 		if(!tList.empty()){
 			if(!std::holds_alternative<basicToken>(tList.front().value))
 				return std::nullopt;
@@ -156,10 +161,10 @@ std::optional<std::pair<ast::function::call, int>> parseFunctionBodyCall(std::sp
 		}
 	}
 
-	return std::make_pair(ast::function::call{name, args}, 3);
+	return makeParseRes(ast::function::call{name, args}, 3);
 }
 
-std::optional<std::pair<std::vector<ast::function::statement>, int>> parseFunctionBody(std::span<const mediumToken> tokens){
+parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
@@ -172,18 +177,18 @@ std::optional<std::pair<std::vector<ast::function::statement>, int>> parseFuncti
 	while(!toks.empty()){
 		auto declTry = parseFunctionBodyDeclaration(toks);
 		if(declTry){
-			output.push_back(declTry->first);
-			toks = toks.subspan(declTry->second);
+			output.push_back(declTry->val);
+			toks = toks.subspan(declTry->toksConsumed);
 			continue;
 		}
 		auto callTry = parseFunctionBodyCall(toks);
 		if(callTry){
-			output.push_back(callTry->first);
-			toks = toks.subspan(callTry->second);
+			output.push_back(callTry->val);
+			toks = toks.subspan(callTry->toksConsumed);
 			continue;
 		}
 		std::cerr<<"Found structure in function body that did not parse as either variable declaration or function call"<<std::endl;
 		break;
 	}
-	return std::make_pair(output, 1);
+	return makeParseRes(output, 1);
 }
