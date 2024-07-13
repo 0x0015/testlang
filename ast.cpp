@@ -18,6 +18,8 @@ void ast::function::dump() const{
 					std::cout<<std::get<call::varNameArg>(arg)<<" ";
 				}else if(std::holds_alternative<ast::literal>(arg)){
 					std::cout<<std::get<ast::literal>(arg).toString()<<" ";
+				}else{
+					std::cout<<"Unknown call arg"<<std::endl;
 				}
 			}
 			std::cout<<")";
@@ -25,6 +27,16 @@ void ast::function::dump() const{
 				std::cout<<" ((matched))";
 			}
 			std::cout<<std::endl;
+		}else if(std::holds_alternative<assignment>(state)){
+			const auto& asgn = std::get<assignment>(state);
+			std::cout<<"\tAssignment: "<<asgn.assignTo<<" = ";
+			if(std::holds_alternative<std::string>(asgn.assignFrom)){
+				std::cout<<std::get<std::string>(asgn.assignFrom)<<std::endl;
+			}else if(std::holds_alternative<ast::literal>(asgn.assignFrom)){
+				std::cout<<std::get<literal>(asgn.assignFrom).toString()<<std::endl;
+			}else{
+				std::cout<<"Unknown assignment from"<<std::endl;
+			}
 		}else{
 			std::cout<<"\tUnknown statement"<<std::endl;
 		}

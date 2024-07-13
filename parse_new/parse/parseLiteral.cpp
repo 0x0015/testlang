@@ -50,6 +50,9 @@ parseRes<float> parseFloat(std::span<const mediumToken> tokens){
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	const auto& str = std::get<basicToken>(tokens.front().value).val;
+	if(str.find('.') == std::string::npos && str.find('e') == std::string::npos)
+		return std::nullopt;//An integer is an integer, not a float
+	
 	std::istringstream iss(str);
 	float val;
 	iss >> std::noskipws >> val;

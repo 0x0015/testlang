@@ -12,6 +12,7 @@ namespace interpreter{
 		struct functionContext{
 			//name -> stack position
 			std::unordered_map<std::string, unsigned int> variablePtrs;
+			std::unordered_map<std::string, unsigned int> variableSizes;
 			unsigned int usedStack = 0;
 		};
 		std::vector<functionContext> functionExecutions;

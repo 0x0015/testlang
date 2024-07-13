@@ -1,6 +1,8 @@
 OBJS	= main.cpp.o\
 	  parse_new/fileDetails.cpp.o \
 	  parse_new/parseUtil.cpp.o \
+	  parse_new/errorUtil.cpp.o \
+	  parse_new/fileIO.cpp.o \
 	  parse_new/parse.cpp.o \
 	  parse_new/tokenize/basicTokenize.cpp.o \
 	  parse_new/tokenize/mediumTokenize.cpp.o \
@@ -14,8 +16,9 @@ OBJS	= main.cpp.o\
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
 	  builtins/assignments.cpp.o \
-	  functionChecker.cpp.o \
-	  typeChecker.cpp.o \
+	  checks/functionChecker.cpp.o \
+	  checks/typeChecker.cpp.o \
+	  checks/assignmentChecker.cpp.o \
 	  interpreter/interpreter.cpp.o \
 	  interpreter/builtins.cpp.o
 
@@ -23,9 +26,9 @@ OBJS	= main.cpp.o\
 OUT	= main
 CXX	= g++
 CC      = gcc
-BUILD_CXX_FLAGS	 = -Wall -std=c++20 -g -Ilexy/include
+BUILD_CXX_FLAGS	 = -Wall -std=c++20 -g -Wno-reorder
 BULID_CC_FLAGS   =
-LINK_OPTS	 = lexy/src/input/file.cpp
+LINK_OPTS	 = 
 
 all: $(OBJS) $(SPIRV)
 	$(CXX) $(OBJS) -o $(OUT) $(LINK_OPTS)

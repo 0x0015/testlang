@@ -1,7 +1,9 @@
 #include "interpreter.hpp"
+#include <cstring>
 
 void addVariableToInterpreterStack(interpreter::interpreter& M, const std::string& name, unsigned int size){
 	M.functionExecutions.back().variablePtrs[name] = M.stackPtr;
+	M.functionExecutions.back().variableSizes[name] = size;
 	M.stackPtr += size;
 	M.functionExecutions.back().usedStack += size;
 }
@@ -11,6 +13,17 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 		if(std::holds_alternative<ast::function::declaration>(state)){
 			const auto& decl = std::get<ast::function::declaration>(state);
 			addVariableToInterpreterStack(M, decl.name, decl.ty.getSize());
+		}else if(std::holds_alternative<ast::function::assignment>(state)){
+			const auto& asgn = std::get<ast::function::assignment>(state);
+			if(std::holds_alternative<std::string>(asgn.assignFrom)){
+				const auto& from = std::get<std::string>(asgn.assignFrom);
+				std::memcpy(M.stack.data() + M.functionExecutions.back().variablePtrs[asgn.assignTo], M.stack.data() + M.functionExecutions.back().variablePtrs[from], M.functionExecutions.back().variableSizes[from]);
+			}else if(std::holds_alternative<ast::literal>(asgn.assignFrom)){
+				const auto& lit = std::get<ast::literal>(asgn.assignFrom);
+				const void* ptr;
+				std::visit([&ptr](auto& x){ptr = &x;}, lit.value);
+				std::memcpy(M.stack.data() + M.functionExecutions.back().variablePtrs[asgn.assignTo], ptr, lit.ty.getSize());
+			}//no third case
 		}else if(std::holds_alternative<ast::function::call>(state)){
 			const auto& call = std::get<ast::function::call>(state);
 			if(call.validatedDef.value().get().builtin){

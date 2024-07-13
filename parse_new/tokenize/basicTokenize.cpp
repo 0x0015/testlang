@@ -1,26 +1,11 @@
 #include "basicTokenize.hpp"
 #include <iostream>
-#include <fstream>
-#include <filesystem>
 #include "../parseUtil.hpp"
+#include "../fileIO.hpp"
 
 void basicToken::print() const{
 	std::cout<<val<<" @ ";
 	file.print();
-}
-
-std::optional<std::string> readFile(const std::string_view filename){
-	if(!std::filesystem::exists(filename)){
-		std::cerr<<"Unable to open file \""<<filename<<"\""<<std::endl;
-		return std::nullopt;
-	}
-	auto size = std::filesystem::file_size(filename);
-	std::ifstream file;
-	file.open(std::string(filename)); //no direct call, so cast to std::string
-	std::string output;
-	output.resize(size);
-	file.read(output.data(), size);
-	return output;
 }
 
 std::optional<std::vector<basicToken>> parseStringsAndComments(const std::string_view file){
@@ -138,7 +123,7 @@ std::optional<std::vector<basicToken>> basicTokenizeString(const std::string_vie
 						output.back().file.fileSize = 0;
 					}
 				}
-				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ','};
+				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ',', '='};
 				if(isInList(contents_val[i], singleCharToks)){
 					if(output.back().val.size() == 0){
 						output.back().val += contents_val[i];

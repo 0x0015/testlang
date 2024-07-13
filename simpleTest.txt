@@ -9,10 +9,13 @@ void main(){
 	((float, float), int) nestedTupleVar;
 	(float[7], bool)[42] tuplesArraysVar;
 	int[5][7] doubleArray;
+	inferredVar = 42;
 	println(myVar);
 	println(true);
-	println(5);
+	myVar = 5;
+	println(myVar);
 	println(3.14159);
+	println(inferredVar);
 }
 
 int test2(float testArg){

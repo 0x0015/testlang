@@ -15,7 +15,7 @@ ast::type getArgumentType(std::unordered_map<std::string, ast::type>& definedVar
 
 bool checkTypeUsesValid(ast::context& context){
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> functions;
-	for(const auto& func : context.funcs){
+	for(auto& func : context.funcs){
 		functions.insert({func.name, std::cref(func)});
 	}
 	
@@ -30,7 +30,8 @@ bool checkTypeUsesValid(ast::context& context){
 				definedVars[arg.name] = arg.ty;
 			}
 		}
-		for(auto& state : func.body){
+		for(unsigned int i=0;i<func.body.size();i++){
+			auto& state = func.body[i];
 			if(std::holds_alternative<ast::function::declaration>(state)){
 				const auto& decl = std::get<ast::function::declaration>(state);
 				if(definedVars.contains(decl.name)){
@@ -41,6 +42,35 @@ bool checkTypeUsesValid(ast::context& context){
 					errored = true;
 				}else{
 					definedVars[decl.name] = decl.ty;
+				}
+			}else if(std::holds_alternative<ast::function::assignment>(state)){
+				const auto& asgn = std::get<ast::function::assignment>(state);
+				ast::type asgnType;
+				if(std::holds_alternative<std::string>(asgn.assignFrom)){
+					const auto& fromName = std::get<std::string>(asgn.assignFrom);
+					if(!definedVars.contains(fromName)){	
+						std::cerr<<"Error: unable to assign from unknown variable \""<<fromName<<"\""<<std::endl;
+						errored = true;
+					}else{
+						asgnType = definedVars[fromName];
+					}
+				}else if(std::holds_alternative<ast::literal>(asgn.assignFrom)){	
+					const auto& fromLit = std::get<ast::literal>(asgn.assignFrom);
+					asgnType = fromLit.ty;
+				}else{
+					std::cerr<<"Error: assignment is not assigning from any target"<<std::endl;
+					errored = true;
+				}
+				if(definedVars.contains(asgn.assignTo)){
+					if(definedVars[asgn.assignTo] != asgnType){
+						std::cerr<<"Error: assigning variable of type "<<asgnType.toString()<<" to variable \""<<asgn.assignTo<<"\" of type "<<definedVars[asgn.assignTo].toString()<<std::endl;
+						errored = true;
+					}
+				}else{
+					//add a new definition here for the variable
+					func.body.insert(func.body.begin() + i, ast::function::declaration{asgnType, asgn.assignTo});
+					definedVars[asgn.assignTo] = asgnType;
+					i++;
 				}
 			}else if(std::holds_alternative<ast::function::call>(state)){
 				auto& call = std::get<ast::function::call>(state);

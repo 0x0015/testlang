@@ -27,7 +27,12 @@ namespace ast{
 			std::vector<argument> args;
 			std::optional<std::reference_wrapper<const function>> validatedDef = std::nullopt;
 		};
-		using statement = std::variant<declaration, call>;
+		struct assignment{
+			using varName = std::string;
+			varName assignTo;
+			std::variant<varName, literal> assignFrom;
+		};
+		using statement = std::variant<declaration, call, assignment>;
 		std::vector<statement> body;
 		bool builtin = false;
 		void dump() const;

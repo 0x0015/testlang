@@ -3,6 +3,7 @@
 #include "parseType.hpp"
 #include "../parseUtil.hpp"
 #include "parseLiteral.hpp"
+#include "../errorUtil.hpp"
 
 parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	//type
@@ -110,6 +111,47 @@ parseRes<ast::function::declaration> parseFunctionBodyDeclaration(std::span<cons
 	return makeParseRes(ast::function::declaration{tyTry->val, name}, outputSize);
 }
 
+parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const mediumToken> tokens){
+	if(tokens.size() < 4)
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const auto& asgnTo = std::get<basicToken>(tokens.front().value).val;
+	int outputSize = 1;
+	tokens = tokens.subspan(1);
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "=")
+		return std::nullopt;
+	outputSize++;
+	tokens = tokens.subspan(1);
+	auto literalTry = parseLiteral(tokens);
+	ast::function::assignment output;
+	output.assignTo = asgnTo;
+	if(literalTry){
+		output.assignFrom = literalTry->val;
+		outputSize += literalTry->toksConsumed;
+		tokens = tokens.subspan(literalTry->toksConsumed);
+	}else{
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		const auto& asgnFrom = std::get<basicToken>(tokens.front().value).val;
+		output.assignFrom = asgnFrom;
+		tokens = tokens.subspan(1);
+		outputSize++;
+	}
+
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != ";")
+		return std::nullopt;
+	outputSize++;
+
+	return makeParseRes(output, outputSize);
+}
+
 parseRes<ast::function::call::argument> parseFunctionCallArg(std::span<const mediumToken> tokens){
 	auto literalTry = parseLiteral(tokens);
 	if(literalTry){
@@ -181,13 +223,20 @@ parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<cons
 			toks = toks.subspan(declTry->toksConsumed);
 			continue;
 		}
+		auto asgnTry = parseFunctionBodyAssignment(toks);
+		if(asgnTry){
+			output.push_back(asgnTry->val);
+			toks = toks.subspan(asgnTry->toksConsumed);
+			continue;
+		}
 		auto callTry = parseFunctionBodyCall(toks);
 		if(callTry){
 			output.push_back(callTry->val);
 			toks = toks.subspan(callTry->toksConsumed);
 			continue;
 		}
-		std::cerr<<"Found structure in function body that did not parse as either variable declaration or function call"<<std::endl;
+		std::cerr<<"Found structure in function body that did not parse as either variable declaration, variable assignment, or function call"<<std::endl;
+		printErrorFileSpot(toks.front());
 		break;
 	}
 	return makeParseRes(output, 1);
