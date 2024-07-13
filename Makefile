@@ -1,21 +1,20 @@
 OBJS	= main.cpp.o\
-	  parse_new/fileDetails.cpp.o \
-	  parse_new/parseUtil.cpp.o \
-	  parse_new/errorUtil.cpp.o \
-	  parse_new/fileIO.cpp.o \
-	  parse_new/parse.cpp.o \
-	  parse_new/tokenize/basicTokenize.cpp.o \
-	  parse_new/tokenize/mediumTokenize.cpp.o \
-	  parse_new/parse/parseContext.cpp.o \
-	  parse_new/parse/parseFunction.cpp.o \
-	  parse_new/parse/parseType.cpp.o \
-	  parse_new/parse/parseLiteral.cpp.o \
-	  ast.cpp.o \
-	  ast_type.cpp.o \
-	  ast_literal.cpp.o \
+	  parse/fileDetails.cpp.o \
+	  parse/parseUtil.cpp.o \
+	  parse/errorUtil.cpp.o \
+	  parse/fileIO.cpp.o \
+	  parse/parse.cpp.o \
+	  parse/tokenize/basicTokenize.cpp.o \
+	  parse/tokenize/mediumTokenize.cpp.o \
+	  parse/parse/parseContext.cpp.o \
+	  parse/parse/parseFunction.cpp.o \
+	  parse/parse/parseType.cpp.o \
+	  parse/parse/parseLiteral.cpp.o \
+	  ast/ast.cpp.o \
+	  ast/ast_type.cpp.o \
+	  ast/ast_literal.cpp.o \
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
-	  builtins/assignments.cpp.o \
 	  checks/functionChecker.cpp.o \
 	  checks/typeChecker.cpp.o \
 	  checks/assignmentChecker.cpp.o \

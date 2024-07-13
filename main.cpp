@@ -1,5 +1,5 @@
 #include <iostream>
-#include "parse_new/parse.hpp"
+#include "parse/parse.hpp"
 #include "checks/functionChecker.hpp"
 #include "checks/typeChecker.hpp"
 #include "builtins/builtins.hpp"

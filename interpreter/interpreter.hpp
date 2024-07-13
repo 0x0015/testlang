@@ -1,5 +1,5 @@
 #pragma once
-#include "../ast.hpp"
+#include "../ast/ast.hpp"
 #include <cstdint>
 #include <unordered_map>
 

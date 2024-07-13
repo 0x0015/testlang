@@ -3,7 +3,7 @@
 #include <iostream>
 #include <optional>
 
-#include "../ast.hpp"
+#include "../ast/ast.hpp"
 
 class parser{
 public:
