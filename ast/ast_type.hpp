@@ -20,18 +20,11 @@ namespace ast{
 			array_type(const type& t_ty, unsigned int len) : ty(std::make_shared<type>(t_ty)), length(len){}
 		};
 		using tuple_type = std::vector<type>;
-		struct function_type{
-			tuple_type args;
-			tuple_type returns;
-			function_type() = default;
-			function_type(const tuple_type& inTy, const tuple_type& outTy) : args(inTy), returns(outTy){}
-		};
-		std::variant<builtin_type, array_type, tuple_type, function_type> ty;
+		std::variant<builtin_type, array_type, tuple_type> ty;
 		type() = default;
 		type(builtin_type builtin_ty) : ty(builtin_ty){}
 		type(const array_type& array_ty) : ty(array_ty){}
 		type(const tuple_type& tuple_ty) : ty(tuple_ty){}
-		type(const function_type& func_ty) : ty(func_ty){}
 		constexpr bool operator==(const type& other) const{
 			if(ty.index() != other.ty.index())
 				return false;
@@ -51,11 +44,6 @@ namespace ast{
 					if(! t1[i].operator==(t2[i])) return false;
 				}
 				return true;
-			}
-			if(std::holds_alternative<function_type>(ty)){
-				const auto& a1 = std::get<function_type>(ty);
-				const auto& a2 = std::get<function_type>(other.ty);
-				return (a1.args == a2.args) && (a1.returns == a2.returns);
 			}
 			return false;
 		}

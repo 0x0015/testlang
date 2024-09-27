@@ -34,7 +34,12 @@ namespace ast{
 		};
 		using statement = std::variant<declaration, call, assignment>;
 		std::vector<statement> body;
-		bool builtin = false;
+		enum positionStatus{
+			normal,
+			builtin,
+			external
+		};
+		positionStatus status = positionStatus::normal;
 		void dump() const;
 	};
 	struct context{

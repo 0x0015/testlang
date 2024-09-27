@@ -40,6 +40,52 @@ parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	return makeParseRes(ast::function{ty->val, name, args->val, body->val}, offset);
 }
 
+parseRes<ast::function> parseExternalFunction(std::span<const mediumToken> tokens){
+	//extern
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "extern")
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	int offset = 1;
+	//type
+	auto ty = parseType(tokens);
+	if(!ty)
+		return std::nullopt;
+	tokens = tokens.subspan(ty->toksConsumed);
+	offset += ty->toksConsumed;
+	parse_debug_print("extern function parsed type");
+	//name
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const auto& name = std::get<basicToken>(tokens.front().value).val;
+	tokens = tokens.subspan(1);
+	offset++;
+	parse_debug_print("extern function parsed name");
+	//args
+	const auto& args = parseFunctionArgs(tokens);
+	if(!args)
+		return std::nullopt;
+	tokens = tokens.subspan(args->toksConsumed);
+	offset += args->toksConsumed;
+
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != ";")
+		return std::nullopt;
+	offset++;
+
+	parse_debug_print("function parsed args");
+
+	return makeParseRes(ast::function{ty->val, name, args->val, {}, ast::function::positionStatus::external}, offset);
+}
+
 parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
@@ -216,6 +262,7 @@ parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<cons
 		return std::nullopt;
 	std::vector<ast::function::statement> output;
 	std::span<const mediumToken> toks(list.value);
+	bool gotParseError = false;
 	while(!toks.empty()){
 		auto declTry = parseFunctionBodyDeclaration(toks);
 		if(declTry){
@@ -237,7 +284,8 @@ parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<cons
 		}
 		std::cerr<<"Found structure in function body that did not parse as either variable declaration, variable assignment, or function call"<<std::endl;
 		printErrorFileSpot(toks.front());
+		gotParseError = true;
 		break;
 	}
-	return makeParseRes(output, 1);
+	return makeParseRes(output, 1, gotParseError);
 }

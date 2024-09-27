@@ -26,7 +26,7 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 			}//no third case
 		}else if(std::holds_alternative<ast::function::call>(state)){
 			const auto& call = std::get<ast::function::call>(state);
-			if(call.validatedDef.value().get().builtin){
+			if(call.validatedDef.value().get().status == ast::function::positionStatus::builtin){
 				interpreter::handleBulitin(call.validatedDef.value().get(), call, M);
 			}else{
 				auto& currentFunc = M.functionExecutions.back();

@@ -3,16 +3,19 @@
 #include "checks/functionChecker.hpp"
 #include "checks/typeChecker.hpp"
 #include "builtins/builtins.hpp"
-
+#include "parse/parseUtil.hpp"
+#include "argParse.hpp"
 #include "interpreter/interpreter.hpp"
 
 int main(int argc, char** argv){
+	auto args = argVals::parse(argc, argv);
+	if(!args)
+		return 0;
+
 	parser parse;
-	if(argc == 2){	
-		parse.files.push_back(std::string(argv[1]));
-	}else{
-		parse.files.push_back("simpleTest.txt");
-	}
+	parse.files.push_back(args->input);
+	bool verbose = args->verbose;
+	doDebugParse = verbose;
 	//parse.files.push_back("test.txt");
 
 	auto parseRes = parse.parseAll();
@@ -25,11 +28,12 @@ int main(int argc, char** argv){
 	errored = errored || !checkConflictingFunctionDefinitions(*parseRes);
 	errored = errored || !checkTypeUsesValid(*parseRes);
 
-	parseRes->dump();
 	if(errored){
 		std::cout<<"An error has occurred.  Aborting."<<std::endl;
 		return -1;
 	}
+	if(verbose)
+		parseRes->dump();
 
 	interpreter::interpret(*parseRes, "main");
 	/*

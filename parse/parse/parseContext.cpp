@@ -16,10 +16,18 @@ std::optional<ast::context> parseContext(std::span<const mediumToken> tokens){
 			tokens = tokens.subspan(funcTry->toksConsumed);
 			context.funcs.push_back(funcTry->val);
 			trying = true;
-		}else{
-			std::cerr<<"Error: Failed to parse function"<<std::endl;
-			return std::nullopt;
+			continue;
 		}
+		const auto& externFuncTry = parseExternalFunction(tokens);
+		if(externFuncTry){
+			parse_debug_print("context parsed external function");
+			tokens = tokens.subspan(externFuncTry->toksConsumed);
+			context.funcs.push_back(externFuncTry->val);
+			trying = true;
+			continue;
+		}
+		std::cerr<<"Error: Failed to parse function"<<std::endl;
+		return std::nullopt;
 	}
 
 	return context;

@@ -7,10 +7,10 @@ std::optional<ast::context> parser::parseAll(){
 	for(const auto& file : files){
 		auto basicToks = basicTokenizeFile(file);
 		if(!basicToks)
-			continue;
+			return std::nullopt;
 		auto mediumToks = parseBrackets(*basicToks);
 		if(!mediumToks)
-			continue;
+			return std::nullopt;
 		auto parsedContext = parseContext(*mediumToks);
 		if(!parsedContext)
 			return std::nullopt;

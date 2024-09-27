@@ -1,4 +1,5 @@
 OBJS	= main.cpp.o\
+	  argParse.cpp.o \
 	  parse/fileDetails.cpp.o \
 	  parse/parseUtil.cpp.o \
 	  parse/errorUtil.cpp.o \

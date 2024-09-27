@@ -44,9 +44,6 @@ std::string ast::type::toString() const{
 		}
 		output += ")";
 		return output;
-	}else if(std::holds_alternative<function_type>(ty)){
-		const auto& func = std::get<function_type>(ty);
-		return type(func.args).toString() + "->" + type(func.returns).toString();
 	}else{
 		std::cerr<<"An unknown error (theoretically impossible) in type::toString has occurred"<<std::endl;
 		return "void";
