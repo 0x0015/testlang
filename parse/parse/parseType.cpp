@@ -60,24 +60,53 @@ parseRes<ast::type::tuple_type> parseTupleType(std::span<const mediumToken> toke
 	return makeParseRes(output, 1);
 }
 
+parseRes<ast::type::function_type> parseFunctionType(std::span<const mediumToken> tokens){
+	auto argsTry = parseTupleType(tokens);
+	if(!argsTry)
+		return std::nullopt;
+	int output = argsTry->toksConsumed;
+	tokens = tokens.subspan(argsTry->toksConsumed);
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "->")
+		return std::nullopt;
+	output++;
+	tokens = tokens.subspan(1);
+
+	auto retsTry = parseTupleType(tokens);
+	if(!retsTry)
+		return std::nullopt;
+	output += retsTry->toksConsumed;
+	return makeParseRes(ast::type::function_type(argsTry->val, retsTry->val), output);
+}
+
 parseRes<ast::type> parseType(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	auto builtinTry = parseBuiltinType(tokens);
 	ast::type ty;
 	unsigned int consumed = 0;
+	//ugly logic here, good enough for now
 	if(builtinTry){
 		tokens = tokens.subspan(builtinTry->toksConsumed);
 		consumed += builtinTry->toksConsumed;
 		ty = builtinTry->val;
 	}else{
-		auto tupleTry = parseTupleType(tokens);
-		if(tupleTry){
-			tokens = tokens.subspan(tupleTry->toksConsumed);
-			consumed += tupleTry->toksConsumed;
-			ty = tupleTry->val;
-		}else
-			return std::nullopt;
+		auto funcTry = parseFunctionType(tokens);
+		if(funcTry){
+			tokens = tokens.subspan(funcTry->toksConsumed);
+			consumed += funcTry->toksConsumed;
+			ty = funcTry->val;
+		}else{
+			auto tupleTry = parseTupleType(tokens);
+			if(tupleTry){
+				tokens = tokens.subspan(tupleTry->toksConsumed);
+				consumed += tupleTry->toksConsumed;
+				ty = tupleTry->val;
+			}else
+				return std::nullopt;
+		}
 	}
 	while(!tokens.empty()){
 		auto arrayTry = parseArrayType(tokens, ty);

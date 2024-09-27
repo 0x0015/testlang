@@ -10,6 +10,8 @@ std::string_view mediumToken::tokList::type_t_to_string(const type_t& ty){
 			return "CURL_BRACK";
 		case SQUARE_BRACK:
 			return "SQUARE_BRACK";
+		default:
+			return "NONE";
 	}
 }
 
@@ -23,7 +25,7 @@ void mediumToken::print_internal() const{
 
 	if(std::holds_alternative<mediumToken::tokList>(value)){
 		const auto& list = std::get<mediumToken::tokList>(value);
-		for(unsigned int i=0;i<currentRecur;i++)
+		for(int i=0;i<currentRecur;i++)
 			std::cout<<"\t";
 		std::cout<<"Token list: "<<mediumToken::tokList::type_t_to_string(list.type);
 		if(!list.value.empty())
@@ -34,7 +36,7 @@ void mediumToken::print_internal() const{
 				std::cout<<std::endl;
 		}
 	}else if(std::holds_alternative<basicToken>(value)){
-		for(unsigned int i=0;i<currentRecur;i++)
+		for(int i=0;i<currentRecur;i++)
 			std::cout<<"\t";
 		std::get<basicToken>(value).print();
 	}else{

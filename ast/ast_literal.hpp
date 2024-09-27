@@ -12,6 +12,8 @@ namespace ast{
 		struct tuple_literal{
 			std::vector<literal> vals;
 		};
+		struct function_literal{
+		};
 		std::variant<builtin_literal, array_literal, tuple_literal> value;
 		literal() = default;
 		literal(int v) : value(v), ty(type::int_type){}

@@ -15,7 +15,7 @@ struct fileErrorDetails{
 fileErrorDetails getFileErrorDetails(const std::string_view file, int errorLoc){
 	int line = 1;
 	int column = 1;
-	for(unsigned int i=0;i<errorLoc;i++){
+	for(int i=0;i<errorLoc;i++){
 		if(file[i] == '\n'){
 			line++;
 			column = 1;
@@ -27,7 +27,7 @@ fileErrorDetails getFileErrorDetails(const std::string_view file, int errorLoc){
 	auto output = fileErrorDetails{line, column, lines[line-1]};
 	if(line-1 > 0)
 		output.prevLine = lines[line-2];
-	if(line-1 < lines.size())
+	if(line-1 < (int)lines.size())
 		output.nextLine = lines[line];
 	return output;
 }

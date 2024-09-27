@@ -44,8 +44,11 @@ std::string ast::type::toString() const{
 		}
 		output += ")";
 		return output;
+	}else if(std::holds_alternative<function_type>(ty)){
+		const auto& func = std::get<function_type>(ty);
+		return type(func.args).toString() + "->" + type(func.returns).toString();
 	}else{
-		std::cerr<<"An unknown error (theoretically impossible) in type_rmap has occurred"<<std::endl;
+		std::cerr<<"An unknown error (theoretically impossible) in type::toString has occurred"<<std::endl;
 		return "void";
 	}
 }
@@ -75,6 +78,8 @@ unsigned int ast::type::getSize() const{
 			output += o.getSize();
 		}
 		return output;
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty)){
+		return 8;// must store 64 bit addr I suppose (though this should really be platform dependent)
 	}else{
 		std::cerr<<"Error: unknown type of type"<<std::endl;
 		return 0;

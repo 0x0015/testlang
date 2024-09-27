@@ -25,18 +25,19 @@ OBJS	= main.cpp.o\
 OUT	= main
 CXX	= g++
 CC      = gcc
+CC_ACCEL = ccache
 BUILD_CXX_FLAGS	 = -Wall -std=c++20 -g -Wno-reorder
 BULID_CC_FLAGS   =
 LINK_OPTS	 = 
 
-all: $(OBJS) $(SPIRV)
-	$(CXX) $(OBJS) -o $(OUT) $(LINK_OPTS)
+all: $(OBJS)
+	$(CC_ACCEL) $(CXX) $(OBJS) -o $(OUT) $(LINK_OPTS)
 
 %.cpp.o: %.cpp
-	$(CXX) $< $(BUILD_CXX_FLAGS) -g -c -o $@
+	$(CC_ACCEL) $(CXX) $< $(BUILD_CXX_FLAGS) -g -c -o $@
 
 %.c.o: %.c
-	$(CXX) $< $(BUILD_CXX_FLAGS) -g -c -o $@
+	$(CC_ACCEL) $(CXX) $< $(BUILD_CXX_FLAGS) -g -c -o $@
 
 clean:
 	rm -f $(OBJS) $(OUT)

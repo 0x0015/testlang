@@ -10,6 +10,7 @@ void main(){
 	(float[7], bool)[42] tuplesArraysVar;
 	int[5][7] doubleArray;
 	inferredVar = 42;
+	(int)->(float) funcVar;
 	println(myVar);
 	println(true);
 	myVar = 5;
