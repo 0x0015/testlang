@@ -2,9 +2,11 @@
 #include "../ast/ast.hpp"
 #include <cstdint>
 #include <unordered_map>
+#include <span>
+#include "ffi.h"
 
 namespace interpreter{
-	void interpret(const ast::context& context, const std::string_view entryPoint);
+	bool interpret(const ast::context& context, const std::string_view entryPoint, std::span<const std::string> linkLibs = {});
 	struct interpreter{
 		std::vector<uint8_t> stack;
 		static constexpr inline unsigned int stackSize = 1024 * 1024 * 4;//4M stack
@@ -16,7 +18,21 @@ namespace interpreter{
 			unsigned int usedStack = 0;
 		};
 		std::vector<functionContext> functionExecutions;
+		struct externalFunctionHandler{
+			std::unordered_map<std::string, void*> dlHandles;
+			struct funcDetails{
+				void* handle;
+				ffi_type rtype;
+				std::vector<ffi_type> atypes;
+				std::vector<ffi_type*> atypePtrs;
+				ffi_cif cif;
+			};
+			std::unordered_map<std::string, funcDetails> funcHandles;
+			void handleExternal(const ast::function& func, const ast::function::call& call, interpreter& M);
+		};
+		externalFunctionHandler externalHandler;
 	};
 	void handleBulitin(const ast::function& func, const ast::function::call& call, interpreter& M);
+	std::optional<interpreter::externalFunctionHandler> loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs);
 }
 

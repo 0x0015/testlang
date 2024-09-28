@@ -35,7 +35,7 @@ int main(int argc, char** argv){
 	if(verbose)
 		parseRes->dump();
 
-	interpreter::interpret(*parseRes, "main");
+	interpreter::interpret(*parseRes, "main", args->links);
 	/*
 
 	auto val = result.value();

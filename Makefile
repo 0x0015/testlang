@@ -20,7 +20,8 @@ OBJS	= main.cpp.o\
 	  checks/typeChecker.cpp.o \
 	  checks/assignmentChecker.cpp.o \
 	  interpreter/interpreter.cpp.o \
-	  interpreter/builtins.cpp.o
+	  interpreter/builtins.cpp.o \
+	  interpreter/externals.cpp.o
 
 
 OUT	= main
@@ -29,7 +30,7 @@ CC      = gcc
 CC_ACCEL = ccache
 BUILD_CXX_FLAGS	 = -Wall -std=c++20 -g -Wno-reorder
 BULID_CC_FLAGS   =
-LINK_OPTS	 = 
+LINK_OPTS	 = -ldl -lffi
 
 all: $(OBJS)
 	$(CC_ACCEL) $(CXX) $(OBJS) -o $(OUT) $(LINK_OPTS)

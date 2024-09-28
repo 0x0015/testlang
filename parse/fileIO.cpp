@@ -3,9 +3,10 @@
 #include <filesystem>
 #include <fstream>
 
-std::optional<std::string> readFile(const std::string_view filename){
+std::optional<std::string> readFile(const std::string_view filename, bool suppressErrors){
 	if(!std::filesystem::exists(filename)){
-		std::cerr<<"Unable to open file \""<<filename<<"\""<<std::endl;
+		if(!suppressErrors)
+			std::cerr<<"Unable to open file \""<<filename<<"\""<<std::endl;
 		return std::nullopt;
 	}
 	auto size = std::filesystem::file_size(filename);

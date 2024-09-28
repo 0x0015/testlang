@@ -28,6 +28,8 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 			const auto& call = std::get<ast::function::call>(state);
 			if(call.validatedDef.value().get().status == ast::function::positionStatus::builtin){
 				interpreter::handleBulitin(call.validatedDef.value().get(), call, M);
+			}else if(call.validatedDef.value().get().status == ast::function::positionStatus::external){
+				M.externalHandler.handleExternal(call.validatedDef.value().get(), call, M);
 			}else{
 				auto& currentFunc = M.functionExecutions.back();
 				M.functionExecutions.push_back({});
@@ -45,7 +47,11 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 	M.functionExecutions.pop_back();
 }
 
-void interpreter::interpret(const ast::context& context, const std::string_view entryPoint){
+bool interpreter::interpret(const ast::context& context, const std::string_view entryPoint, std::span<const std::string> linkLibs){
+	auto externalHandler = loadExternalFunctions(context.funcs, linkLibs);
+	if(!externalHandler)
+		return false;
+
 	std::optional<std::reference_wrapper<const ast::function>> entry;
 	for(const auto& func : context.funcs){
 		if(func.name == entryPoint && func.ty == ast::type::void_type && func.args.size() == 0){
@@ -55,13 +61,16 @@ void interpreter::interpret(const ast::context& context, const std::string_view 
 	}
 	if(!entry){
 		std::cerr<<"Error: Unable to find entry point function \""<<entryPoint<<"\" (must be void->void)"<<std::endl;
-		return;
+		return false;
 	}
 	interpreter M;
 	M.stack.resize(interpreter::stackSize);
 	M.stackPtr = 0;
+	M.externalHandler = *externalHandler;
 
 	M.functionExecutions.push_back({});
 	interpretFunction(M, entry.value().get());
+
+	return true;
 }
 
