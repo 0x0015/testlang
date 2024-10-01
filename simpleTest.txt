@@ -21,4 +21,3 @@ void main(){
 int test2(float testArg){
 }
 
-extern int test3(float anArg);

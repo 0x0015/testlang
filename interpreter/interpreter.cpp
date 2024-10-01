@@ -24,22 +24,27 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 				std::visit([&ptr](auto& x){ptr = &x;}, lit.value);
 				std::memcpy(M.stack.data() + M.functionExecutions.back().variablePtrs[asgn.assignTo], ptr, lit.ty.getSize());
 			}//no third case
-		}else if(std::holds_alternative<ast::function::call>(state)){
-			const auto& call = std::get<ast::function::call>(state);
-			if(call.validatedDef.value().get().status == ast::function::positionStatus::builtin){
-				interpreter::handleBulitin(call.validatedDef.value().get(), call, M);
-			}else if(call.validatedDef.value().get().status == ast::function::positionStatus::external){
-				M.externalHandler.handleExternal(call.validatedDef.value().get(), call, M);
-			}else{
-				auto& currentFunc = M.functionExecutions.back();
-				M.functionExecutions.push_back({});
-				for(auto& arg : call.args){
-					//TODO: generalize calling to allow literals
-					//really though, I should do more compil-y memory management and put all the literals in a buffer, etc...
-					if(std::holds_alternative<std::string>(arg))
-						M.functionExecutions.back().variablePtrs[std::get<std::string>(arg)] = currentFunc.variablePtrs[std::get<std::string>(arg)];
+		}else if(std::holds_alternative<ast::expr>(state)){
+			const auto& exp = std::get<ast::expr>(state);
+			if(std::holds_alternative<ast::call>(exp.value)){
+				const auto& call = std::get<ast::call>(exp.value);
+				if(call.validatedDef.value().get().status == ast::function::positionStatus::builtin){
+					interpreter::handleBulitin(call.validatedDef.value().get(), call, M);
+				}else if(call.validatedDef.value().get().status == ast::function::positionStatus::external){
+					M.externalHandler.handleExternal(call.validatedDef.value().get(), call, M);
+				}else{
+					auto& currentFunc = M.functionExecutions.back();
+					M.functionExecutions.push_back({});
+					for(auto& arg : call.args){
+						//TODO: generalize calling to allow literals
+						//really though, I should do more compil-y memory management and put all the literals in a buffer, etc...
+						if(std::holds_alternative<ast::expr::varName>(arg.value))
+							M.functionExecutions.back().variablePtrs[std::get<ast::expr::varName>(arg.value)] = currentFunc.variablePtrs[std::get<ast::expr::varName>(arg.value)];
+						else
+							std::cerr<<"Currently unable to evaluate function args of non-variable expressions.  Coming soon!"<<std::endl;
+					}
+					interpretFunction(M, call.validatedDef.value().get());
 				}
-				interpretFunction(M, call.validatedDef.value().get());
 			}
 		}
 	}

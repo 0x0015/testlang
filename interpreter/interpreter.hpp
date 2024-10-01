@@ -28,11 +28,11 @@ namespace interpreter{
 				ffi_cif cif;
 			};
 			std::unordered_map<std::string, funcDetails> funcHandles;
-			void handleExternal(const ast::function& func, const ast::function::call& call, interpreter& M);
+			void handleExternal(const ast::function& func, const ast::call& call, interpreter& M);
 		};
 		externalFunctionHandler externalHandler;
 	};
-	void handleBulitin(const ast::function& func, const ast::function::call& call, interpreter& M);
+	void handleBulitin(const ast::function& func, const ast::call& call, interpreter& M);
 	std::optional<interpreter::externalFunctionHandler> loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs);
 }
 

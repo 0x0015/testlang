@@ -35,7 +35,7 @@ namespace impl{
 }
 
 
-void interpreter::handleBulitin(const ast::function& func, const ast::function::call& call, interpreter& M){
+void interpreter::handleBulitin(const ast::function& func, const ast::call& call, interpreter& M){
 
 	const auto functionMatches = [&](const std::string_view name, const std::vector<ast::type> CAT){
 		if(func.name != name)
@@ -50,12 +50,12 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 	};
 
 	const auto getArg = [&]<typename T>(unsigned int argNum) -> T{
-		if(std::holds_alternative<ast::function::call::varNameArg>(call.args[argNum])){
-			const auto& carg = std::get<ast::function::call::varNameArg>(call.args[argNum]);
+		if(std::holds_alternative<ast::expr::varName>(call.args[argNum].value)){
+			const auto& carg = std::get<ast::expr::varName>(call.args[argNum].value);
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return *arg;
-		}else if(std::holds_alternative<ast::literal>(call.args[argNum])){	
-			const auto& larg = std::get<ast::literal>(call.args[argNum]);
+		}else if(std::holds_alternative<ast::literal>(call.args[argNum].value)){	
+			const auto& larg = std::get<ast::literal>(call.args[argNum].value);
 			//TODO: make this handle more than builtin types
 			return std::get<T>(std::get<ast::literal::builtin_literal>(larg.value));
 		}else{
@@ -65,8 +65,8 @@ void interpreter::handleBulitin(const ast::function& func, const ast::function::
 	};
 
 	const auto getArgPtr = [&]<typename T>(unsigned int argNum) -> T*{
-		if(std::holds_alternative<ast::function::call::varNameArg>(call.args[argNum])){
-			const auto& carg = std::get<ast::function::call::varNameArg>(call.args[argNum]);
+		if(std::holds_alternative<ast::expr::varName>(call.args[argNum].value)){
+			const auto& carg = std::get<ast::expr::varName>(call.args[argNum].value);
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return arg;
 		}else{

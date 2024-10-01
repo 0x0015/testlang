@@ -11,9 +11,11 @@ OBJS	= main.cpp.o\
 	  parse/parse/parseFunction.cpp.o \
 	  parse/parse/parseType.cpp.o \
 	  parse/parse/parseLiteral.cpp.o \
+	  parse/parse/parseExpr.cpp.o \
 	  ast/ast.cpp.o \
 	  ast/ast_type.cpp.o \
 	  ast/ast_literal.cpp.o \
+	  ast/ast_expr.cpp.o \
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
 	  checks/functionChecker.cpp.o \

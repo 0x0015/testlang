@@ -144,7 +144,7 @@ std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::lo
 	return handler;
 }
 
-void interpreter::interpreter::externalFunctionHandler::handleExternal(const ast::function& func, const ast::function::call& call, interpreter& M){
+void interpreter::interpreter::externalFunctionHandler::handleExternal(const ast::function& func, const ast::call& call, interpreter& M){
 	std::cout<<"Handling external functin!"<<std::endl;
 	unsigned int retSize = std::min<unsigned int>(4, func.ty.getSize());
 	unsigned int argSize = sizeof(void*) * func.args.size();
@@ -156,7 +156,7 @@ void interpreter::interpreter::externalFunctionHandler::handleExternal(const ast
 	std::vector<uint8_t> RAVec(retSize + argSize);//could be an alloca if I was really crazy.  I'm not
 	void** argArr = (void**)((uint8_t*)RAVec.data() + retSize);
 	for(unsigned int i=0;i<func.args.size();i++){
-		const auto& carg = std::get<ast::function::call::varNameArg>(call.args[i]);
+		const auto& carg = std::get<ast::expr::varName>(call.args[i].value);
 		argArr[i] = (void*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 	}
 	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, (void*)RAVec.data(), argArr);

@@ -2,11 +2,19 @@
 #include <unordered_map>
 #include <optional>
 
-ast::type getArgumentType(std::unordered_map<std::string, ast::type>& definedVars, const ast::function::call::argument& arg){
-	if(std::holds_alternative<ast::function::call::varNameArg>(arg)){
-		return definedVars[std::get<ast::function::call::varNameArg>(arg)];
-	}else if(std::holds_alternative<ast::literal>(arg)){
-		return std::get<ast::literal>(arg).ty;
+ast::type getExprType(std::unordered_map<std::string, ast::type>& definedVars, const ast::expr& exp){
+	if(std::holds_alternative<ast::literal>(exp.value)){
+		return std::get<ast::literal>(exp.value).ty;
+	}else if(std::holds_alternative<ast::call>(exp.value)){
+		const auto& call = std::get<ast::call>(exp.value);
+		if(call.validatedDef)
+			return call.validatedDef->get().ty;
+		else{
+			std::cerr<<"Internal Error: call to an unknown function"<<std::endl;
+			return ast::type::none_type;
+		}
+	}else if(std::holds_alternative<ast::expr::varName>(exp.value)){
+		return definedVars[std::get<ast::expr::varName>(exp.value)];
 	}else{
 		std::cerr<<"Error: unknown internal argument type error"<<std::endl;
 		return ast::type::none_type;
@@ -72,68 +80,71 @@ bool checkTypeUsesValid(ast::context& context){
 					definedVars[asgn.assignTo] = asgnType;
 					i++;
 				}
-			}else if(std::holds_alternative<ast::function::call>(state)){
-				auto& call = std::get<ast::function::call>(state);
-				const auto& funcs = functions.equal_range(call.name);
-
-				bool unableToDecernCallargTypes = false;
-				for(unsigned int i=0;i<call.args.size();i++){
-					if(std::holds_alternative<ast::function::call::varNameArg>(call.args[i]) && !definedVars.contains(std::get<ast::function::call::varNameArg>(call.args[i]))){
-						std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::function::call::varNameArg>(call.args[i])<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
-						errored = true;
-						unableToDecernCallargTypes = true;
-						break;
-					}
-				}
-				if(unableToDecernCallargTypes)
-					continue;
-
-				std::optional<std::reference_wrapper<const ast::function>> matchingFunc;
-				for(auto it = funcs.first; it != funcs.second; ++it){
-					const auto& func = it->second.get();
-					if(func.args.size() != call.args.size()){
-						continue;
-					}
-					bool argsMatch = true;
-					for(unsigned int i=0;i<func.args.size();i++){
-						ast::type varType = getArgumentType(definedVars, call.args[i]);
-						if(func.args[i].ty != varType){
-							argsMatch = false;
+			}else if(std::holds_alternative<ast::expr>(state)){
+				auto& exp = std::get<ast::expr>(state);
+				if(std::holds_alternative<ast::call>(exp.value)){
+					auto& call = std::get<ast::call>(exp.value);
+					const auto& funcs = functions.equal_range(call.name);
+	
+					bool unableToDecernCallargTypes = false;
+					for(unsigned int i=0;i<call.args.size();i++){
+						if(std::holds_alternative<ast::expr::varName>(call.args[i].value) && !definedVars.contains(std::get<ast::expr::varName>(call.args[i].value))){
+							std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::expr::varName>(call.args[i].value)<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
+							errored = true;
+							unableToDecernCallargTypes = true;
 							break;
 						}
 					}
-					if(!argsMatch)
+					if(unableToDecernCallargTypes)
 						continue;
-
-					//if you got here, all the args both exist and match
-					matchingFunc = std::cref(func);
-				}
-				if(!matchingFunc){
-					//there was no matching function! figure out why
-					std::cerr<<"Error: No function definition for \""<<call.name<<"\" matching "<<call.name<<"(";
-					for(unsigned int i=0;i<call.args.size();i++){
-						ast::type varType = getArgumentType(definedVars, call.args[i]);
-						std::cerr<<varType.toString();
-						if(i+1 < call.args.size())
-							std::cerr<<", ";
-					}
-					std::cerr<<")"<<std::endl;
-					std::cerr<<"Candidates:"<<std::endl;
+	
+					std::optional<std::reference_wrapper<const ast::function>> matchingFunc;
 					for(auto it = funcs.first; it != funcs.second; ++it){
 						const auto& func = it->second.get();
-						std::cerr<<"\t"<<func.ty.toString()<<" "<<func.name<<"(";
+						if(func.args.size() != call.args.size()){
+							continue;
+						}
+						bool argsMatch = true;
 						for(unsigned int i=0;i<func.args.size();i++){
-							std::cerr<<func.args[i].ty.toString();
-							if(i+1 < func.args.size())
+							ast::type varType = getExprType(definedVars, call.args[i]);
+							if(func.args[i].ty != varType){
+								argsMatch = false;
+								break;
+							}
+						}
+						if(!argsMatch)
+							continue;
+	
+						//if you got here, all the args both exist and match
+						matchingFunc = std::cref(func);
+					}
+					if(!matchingFunc){
+						//there was no matching function! figure out why
+						std::cerr<<"Error: No function definition for \""<<call.name<<"\" matching "<<call.name<<"(";
+						for(unsigned int i=0;i<call.args.size();i++){
+							ast::type varType = getExprType(definedVars, call.args[i]);
+							std::cerr<<varType.toString();
+							if(i+1 < call.args.size())
 								std::cerr<<", ";
 						}
 						std::cerr<<")"<<std::endl;
+						std::cerr<<"Candidates:"<<std::endl;
+						for(auto it = funcs.first; it != funcs.second; ++it){
+							const auto& func = it->second.get();
+							std::cerr<<"\t"<<func.ty.toString()<<" "<<func.name<<"(";
+							for(unsigned int i=0;i<func.args.size();i++){
+								std::cerr<<func.args[i].ty.toString();
+								if(i+1 < func.args.size())
+									std::cerr<<", ";
+							}
+							std::cerr<<")"<<std::endl;
+						}
+	
+						errored = true;
 					}
-
-					errored = true;
+					//realistically here I should do something with the matched functions (as I'm definitely going to need that)
+					call.validatedDef = matchingFunc;
 				}
-				//realistically here I should do something with the matched functions (as I'm definitely going to need that)
-				call.validatedDef = matchingFunc;
 			}
 		}
 	}

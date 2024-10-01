@@ -11,11 +11,14 @@ bool checkFunctionsDefined(const ast::context& context){
 	bool errored = false;
 	for(const auto& func : context.funcs){
 		for(const auto& state : func.body){
-			if(std::holds_alternative<ast::function::call>(state)){
-				const auto& call = std::get<ast::function::call>(state);
-				if(!definedFunctions.contains(call.name)){
-					std::cerr<<"Error: call to undefined function \""<<call.name<<"\" in function \""<<func.name<<"\""<<std::endl;
-					errored = true;
+			if(std::holds_alternative<ast::expr>(state)){
+				const auto& expr = std::get<ast::expr>(state);
+				if(std::holds_alternative<ast::call>(expr.value)){
+					const auto& call = std::get<ast::call>(expr.value);
+					if(!definedFunctions.contains(call.name)){
+						std::cerr<<"Error: call to undefined function \""<<call.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+						errored = true;
+					}
 				}
 			}
 		}

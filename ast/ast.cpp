@@ -10,23 +10,9 @@ void ast::function::dump() const{
 		if(std::holds_alternative<declaration>(state)){
 			const auto& decl = std::get<declaration>(state);
 			std::cout<<"\tDeclaration: "<<decl.ty.toString()<<" "<<decl.name<<std::endl;
-		}else if(std::holds_alternative<call>(state)){
-			const auto& cll = std::get<call>(state);
-			std::cout<<"\tCall: "<<cll.name<<"( ";
-			for(const auto& arg : cll.args){
-				if(std::holds_alternative<call::varNameArg>(arg)){
-					std::cout<<std::get<call::varNameArg>(arg)<<" ";
-				}else if(std::holds_alternative<ast::literal>(arg)){
-					std::cout<<std::get<ast::literal>(arg).toString()<<" ";
-				}else{
-					std::cout<<"Unknown call arg"<<std::endl;
-				}
-			}
-			std::cout<<")";
-			if(cll.validatedDef){
-				std::cout<<" ((matched))";
-			}
-			std::cout<<std::endl;
+		}else if(std::holds_alternative<expr>(state)){
+			const auto& exp = std::get<expr>(state);
+			exp.dump();
 		}else if(std::holds_alternative<assignment>(state)){
 			const auto& asgn = std::get<assignment>(state);
 			std::cout<<"\tAssignment: "<<asgn.assignTo<<" = ";

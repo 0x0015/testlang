@@ -6,6 +6,7 @@
 
 #include "ast_type.hpp"
 #include "ast_literal.hpp"
+#include "ast_expr.hpp"
 
 namespace ast{
 	struct function{
@@ -20,19 +21,12 @@ namespace ast{
 			type ty;
 			std::string name;
 		};
-		struct call{
-			std::string name;
-			using varNameArg = std::string;
-			using argument = std::variant<varNameArg, literal>;
-			std::vector<argument> args;
-			std::optional<std::reference_wrapper<const function>> validatedDef = std::nullopt;
-		};
 		struct assignment{
 			using varName = std::string;
 			varName assignTo;
 			std::variant<varName, literal> assignFrom;
 		};
-		using statement = std::variant<declaration, call, assignment>;
+		using statement = std::variant<declaration, assignment, expr>;
 		std::vector<statement> body;
 		enum positionStatus{
 			normal,
