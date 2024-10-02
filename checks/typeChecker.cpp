@@ -54,16 +54,16 @@ bool checkTypeUsesValid(ast::context& context){
 			}else if(std::holds_alternative<ast::function::assignment>(state)){
 				const auto& asgn = std::get<ast::function::assignment>(state);
 				ast::type asgnType;
-				if(std::holds_alternative<std::string>(asgn.assignFrom)){
-					const auto& fromName = std::get<std::string>(asgn.assignFrom);
+				if(std::holds_alternative<std::string>(asgn.assignFrom.value)){
+					const auto& fromName = std::get<std::string>(asgn.assignFrom.value);
 					if(!definedVars.contains(fromName)){	
 						std::cerr<<"Error: unable to assign from unknown variable \""<<fromName<<"\""<<std::endl;
 						errored = true;
 					}else{
 						asgnType = definedVars[fromName];
 					}
-				}else if(std::holds_alternative<ast::literal>(asgn.assignFrom)){	
-					const auto& fromLit = std::get<ast::literal>(asgn.assignFrom);
+				}else if(std::holds_alternative<ast::literal>(asgn.assignFrom.value)){	
+					const auto& fromLit = std::get<ast::literal>(asgn.assignFrom.value);
 					asgnType = fromLit.ty;
 				}else{
 					std::cerr<<"Error: assignment is not assigning from any target"<<std::endl;

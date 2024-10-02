@@ -1,11 +1,12 @@
 #include "interpreter.hpp"
 #include <filesystem>
 #include <dlfcn.h>
+#include <cstring>
 #include "ffi.h"
 #include "../parse/fileIO.hpp"
 #include "../parse/parseUtil.hpp"
 
-namespace interpreter{
+namespace interpreterv2{
 
 const char* addToLibToPathNeed(std::string_view path){
 	if(path.empty())
@@ -83,10 +84,10 @@ std::optional<std::string> parseGNUldScript(std::string_view filename){
 	return std::nullopt;
 }
 
+
 }
 
-std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs){
-	interpreter::externalFunctionHandler handler;
+bool interpreterv2::interpreter::loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs){
 	bool loadFailed = false;
 	for(const auto& str : linkLibs){
 		const auto& objPath = addToLibToPathNeed(str) + str + addExtensionToPathNeed(str);
@@ -101,16 +102,16 @@ std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::lo
 				handle = dlopen(realObjPath->c_str(), RTLD_LAZY);
 			}
 		}
-		handler.dlHandles[objPath] = handle;
+		dlHandles[objPath] = handle;
 	}
 	if(loadFailed)
-		return std::nullopt;
+		return false;
 
 	for(const auto& func : funcs){
 		if(func.status == ast::function::positionStatus::external){
 			void* handle = nullptr;
 			int implsFound = 0;
-			for(auto& [dlname, dlhandle] : handler.dlHandles){
+			for(auto& [dlname, dlhandle] : dlHandles){
 				void* tmpHandle = dlsym(dlhandle, func.name.c_str());
 				if(tmpHandle != nullptr){
 					//symbol was found!
@@ -122,7 +123,7 @@ std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::lo
 				loadFailed = true;
 				std::cerr<<"Failed to find external function \""<<func.name<<"\" in loaded external libs"<<std::endl;
 			}else{
-				auto& funcDetail = handler.funcHandles[func.name];
+				auto& funcDetail = funcHandles[func.name];
 				funcDetail.handle = handle;
 
 				//now for ffi bs
@@ -143,27 +144,36 @@ std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::lo
 	}
 
 	if(loadFailed)
-		return std::nullopt;
+		return false;
 
-	return handler;
+	return true;
 }
 
-void interpreter::interpreter::externalFunctionHandler::handleExternal(const ast::function& func, const ast::call& call, interpreter& M){
-	std::cout<<"Handling external functin!"<<std::endl;
-	unsigned int retSize = std::min<unsigned int>(4, func.ty.getSize());
-	unsigned int argSize = sizeof(void*) * func.args.size();
-	//for(const auto& arg : func.args){
-	//	argSize += sizeof(void*);
-	//}
+std::vector<uint8_t> interpreterv2::interpreter::handleExternalCall(const ast::call& call){
+	//std::cout<<"Handling external functin!"<<std::endl;
+	
+	const auto& func = call.validatedDef->get();
 
-	auto& funcDetail = M.externalHandler.funcHandles[func.name];
-	std::vector<uint8_t> RAVec(retSize + argSize);//could be an alloca if I was really crazy.  I'm not
-	void** argArr = (void**)((uint8_t*)RAVec.data() + retSize);
-	for(unsigned int i=0;i<func.args.size();i++){
-		const auto& carg = std::get<ast::expr::varName>(call.args[i].value);
-		argArr[i] = (void*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
+	unsigned int retSize = std::min<unsigned int>(4, func.ty.getSize());
+	unsigned int argSize = 0;
+	for(const auto& arg : func.args){
+		argSize += arg.ty.getSize();
 	}
-	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, (void*)RAVec.data(), argArr);
+
+	auto& funcDetail = funcHandles[func.name];
+	std::vector<uint8_t> RAVec(retSize + argSize);//could be an alloca if I was really crazy.  I'm not
+	std::vector<void*> ptrVec(argSize);
+	unsigned int usedRAMem = retSize;
+	for(unsigned int i=0;i<func.args.size();i++){
+		auto val = interpretExpr(call.args[i]);
+		std::memcpy(RAVec.data() + usedRAMem, val.data(), val.size());
+		ptrVec[i] = RAVec.data() + usedRAMem;
+		usedRAMem += val.size();
+	}
+	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, ptrVec.data(), ptrVec.data() + retSize);
+
+	RAVec.resize(retSize);
+	return RAVec;
 }
 
 

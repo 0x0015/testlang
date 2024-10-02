@@ -17,6 +17,7 @@ namespace ast{
 	struct expr{
 		using varName = std::string;
 		std::variant<literal, call, varName> value;
+		expr() = default;
 		expr(const call& c) : value(c){}
 		expr(const literal& l) : value(l){}
 		expr(const std::string& s) : value(s){}

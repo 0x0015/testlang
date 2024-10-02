@@ -173,21 +173,10 @@ parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const 
 		return std::nullopt;
 	outputSize++;
 	tokens = tokens.subspan(1);
-	auto literalTry = parseLiteral(tokens);
-	ast::function::assignment output;
-	output.assignTo = asgnTo;
-	if(literalTry){
-		output.assignFrom = literalTry->val;
-		outputSize += literalTry->toksConsumed;
-		tokens = tokens.subspan(literalTry->toksConsumed);
-	}else{
-		if(!std::holds_alternative<basicToken>(tokens.front().value))
-			return std::nullopt;
-		const auto& asgnFrom = std::get<basicToken>(tokens.front().value).val;
-		output.assignFrom = asgnFrom;
-		tokens = tokens.subspan(1);
-		outputSize++;
-	}
+
+	const auto& asgnFrom = parseExpr(tokens);
+	if(!asgnFrom)
+		return std::nullopt;
 
 	if(tokens.empty())
 		return std::nullopt;
@@ -197,7 +186,7 @@ parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const 
 		return std::nullopt;
 	outputSize++;
 
-	return makeParseRes(output, outputSize);
+	return makeParseRes(ast::function::assignment{asgnTo, asgnFrom->val}, outputSize);
 }
 
 parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<const mediumToken> tokens){

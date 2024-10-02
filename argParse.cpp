@@ -23,6 +23,10 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 			output.links.push_back(std::string(arg.substr(2)));
 			continue;
 		}
+		if(arg == "-i_old"){
+			output.oldInterpreter = true;
+			continue;
+		}
 		if(output.input.empty() && arg.size() > 3 && arg[0] != '-'){
 			output.input = arg;
 			continue;

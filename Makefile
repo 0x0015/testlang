@@ -23,7 +23,10 @@ OBJS	= main.cpp.o\
 	  checks/assignmentChecker.cpp.o \
 	  interpreter/interpreter.cpp.o \
 	  interpreter/builtins.cpp.o \
-	  interpreter/externals.cpp.o
+	  interpreter/externals.cpp.o \
+	  interpreterv2/interpreter.cpp.o \
+	  interpreterv2/builtin.cpp.o \
+	  interpreterv2/external.cpp.o
 
 
 OUT	= main

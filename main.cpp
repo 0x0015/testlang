@@ -6,6 +6,7 @@
 #include "parse/parseUtil.hpp"
 #include "argParse.hpp"
 #include "interpreter/interpreter.hpp"
+#include "interpreterv2/interpreter.hpp"
 
 int main(int argc, char** argv){
 	auto args = argVals::parse(argc, argv);
@@ -35,7 +36,13 @@ int main(int argc, char** argv){
 	if(verbose)
 		parseRes->dump();
 
-	interpreter::interpret(*parseRes, "main", args->links);
+	if(args->oldInterpreter){
+		//old is faster but less featured (may catch up slowly)
+		interpreter::interpret(*parseRes, "main", args->links);
+	}else{
+		//new is slower, but should be more fleshed out
+		interpreterv2::interpret(*parseRes, "main", args->links);
+	}
 	/*
 
 	auto val = result.value();

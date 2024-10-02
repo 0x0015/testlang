@@ -24,7 +24,7 @@ namespace ast{
 		struct assignment{
 			using varName = std::string;
 			varName assignTo;
-			std::variant<varName, literal> assignFrom;
+			expr assignFrom;
 		};
 		using statement = std::variant<declaration, assignment, expr>;
 		std::vector<statement> body;

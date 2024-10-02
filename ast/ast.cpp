@@ -16,13 +16,7 @@ void ast::function::dump() const{
 		}else if(std::holds_alternative<assignment>(state)){
 			const auto& asgn = std::get<assignment>(state);
 			std::cout<<"\tAssignment: "<<asgn.assignTo<<" = ";
-			if(std::holds_alternative<std::string>(asgn.assignFrom)){
-				std::cout<<std::get<std::string>(asgn.assignFrom)<<std::endl;
-			}else if(std::holds_alternative<ast::literal>(asgn.assignFrom)){
-				std::cout<<std::get<literal>(asgn.assignFrom).toString()<<std::endl;
-			}else{
-				std::cout<<"Unknown assignment from"<<std::endl;
-			}
+			asgn.assignFrom.dump();
 		}else{
 			std::cout<<"\tUnknown statement"<<std::endl;
 		}
