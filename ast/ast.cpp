@@ -12,11 +12,14 @@ void ast::function::dump() const{
 			std::cout<<"\tDeclaration: "<<decl.ty.toString()<<" "<<decl.name<<std::endl;
 		}else if(std::holds_alternative<expr>(state)){
 			const auto& exp = std::get<expr>(state);
+			std::cout<<"\tExpr: ";
 			exp.dump();
+			std::cout<<";"<<std::endl;
 		}else if(std::holds_alternative<assignment>(state)){
 			const auto& asgn = std::get<assignment>(state);
 			std::cout<<"\tAssignment: "<<asgn.assignTo<<" = ";
 			asgn.assignFrom.dump();
+			std::cout<<";"<<std::endl;
 		}else{
 			std::cout<<"\tUnknown statement"<<std::endl;
 		}

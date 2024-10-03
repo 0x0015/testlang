@@ -13,6 +13,9 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 		auto arg = std::string_view(argv[i]);
 		if(arg == "-h" || arg == "--help"){
 			std::cout<<"this is the help screen!"<<std::endl;
+			std::cout<<"\t-v | --verbose for verbose"<<std::endl;
+			std::cout<<"\t-l{lib} for linking to a library"<<std::endl;
+			std::cout<<"\t-i_old for the old interpreter"<<std::endl;
 			return std::nullopt;
 		};
 		if(arg == "-v" || arg == "--verbose"){

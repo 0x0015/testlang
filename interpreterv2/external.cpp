@@ -150,7 +150,7 @@ bool interpreterv2::interpreter::loadExternalFunctions(std::span<const ast::func
 }
 
 std::vector<uint8_t> interpreterv2::interpreter::handleExternalCall(const ast::call& call){
-	//std::cout<<"Handling external functin!"<<std::endl;
+	std::cout<<"Handling external functin!"<<std::endl;
 	
 	const auto& func = call.validatedDef->get();
 
@@ -170,7 +170,7 @@ std::vector<uint8_t> interpreterv2::interpreter::handleExternalCall(const ast::c
 		ptrVec[i] = RAVec.data() + usedRAMem;
 		usedRAMem += val.size();
 	}
-	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, ptrVec.data(), ptrVec.data() + retSize);
+	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, RAVec.data(), ptrVec.data());
 
 	RAVec.resize(retSize);
 	return RAVec;

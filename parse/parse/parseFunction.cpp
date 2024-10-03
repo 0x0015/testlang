@@ -162,11 +162,13 @@ parseRes<ast::function::declaration> parseFunctionBodyDeclaration(std::span<cons
 parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const mediumToken> tokens){
 	if(tokens.size() < 4)
 		return std::nullopt;
+
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	const auto& asgnTo = std::get<basicToken>(tokens.front().value).val;
 	int outputSize = 1;
 	tokens = tokens.subspan(1);
+
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	if(std::get<basicToken>(tokens.front().value).val != "=")
@@ -177,6 +179,8 @@ parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const 
 	const auto& asgnFrom = parseExpr(tokens);
 	if(!asgnFrom)
 		return std::nullopt;
+	tokens = tokens.subspan(asgnFrom->toksConsumed);
+	outputSize += asgnFrom->toksConsumed;
 
 	if(tokens.empty())
 		return std::nullopt;
@@ -187,6 +191,22 @@ parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const 
 	outputSize++;
 
 	return makeParseRes(ast::function::assignment{asgnTo, asgnFrom->val}, outputSize);
+}
+
+parseRes<ast::expr> parseFunctionBodyExpr(std::span<const mediumToken> tokens){
+	auto exprTry = parseExpr(tokens);
+	if(!exprTry)
+		return std::nullopt;
+	tokens = tokens.subspan(exprTry->toksConsumed);
+
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != ";")
+		return std::nullopt;
+
+	return makeParseRes(exprTry->val, exprTry->toksConsumed+1);
 }
 
 parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<const mediumToken> tokens){
@@ -213,7 +233,7 @@ parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<cons
 			toks = toks.subspan(asgnTry->toksConsumed);
 			continue;
 		}
-		auto exprTry = parseExpr(toks);
+		auto exprTry = parseFunctionBodyExpr(toks);
 		if(exprTry){
 			output.push_back(exprTry->val);
 			toks = toks.subspan(exprTry->toksConsumed);
