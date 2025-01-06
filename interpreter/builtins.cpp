@@ -50,8 +50,8 @@ void interpreter::handleBulitin(const ast::function& func, const ast::call& call
 	};
 
 	const auto getArg = [&]<typename T>(unsigned int argNum) -> T{
-		if(std::holds_alternative<ast::expr::varName>(call.args[argNum].value)){
-			const auto& carg = std::get<ast::expr::varName>(call.args[argNum].value);
+		if(std::holds_alternative<ast::varName>(call.args[argNum].value)){
+			const auto& carg = std::get<ast::varName>(call.args[argNum].value).name;
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return *arg;
 		}else if(std::holds_alternative<ast::literal>(call.args[argNum].value)){	
@@ -65,8 +65,8 @@ void interpreter::handleBulitin(const ast::function& func, const ast::call& call
 	};
 
 	const auto getArgPtr = [&]<typename T>(unsigned int argNum) -> T*{
-		if(std::holds_alternative<ast::expr::varName>(call.args[argNum].value)){
-			const auto& carg = std::get<ast::expr::varName>(call.args[argNum].value);
+		if(std::holds_alternative<ast::varName>(call.args[argNum].value)){
+			const auto& carg = std::get<ast::varName>(call.args[argNum].value).name;
 			T* arg = (T*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 			return arg;
 		}else{

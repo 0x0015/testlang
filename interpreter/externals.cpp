@@ -160,7 +160,7 @@ void interpreter::interpreter::externalFunctionHandler::handleExternal(const ast
 	std::vector<uint8_t> RAVec(retSize + argSize);//could be an alloca if I was really crazy.  I'm not
 	void** argArr = (void**)((uint8_t*)RAVec.data() + retSize);
 	for(unsigned int i=0;i<func.args.size();i++){
-		const auto& carg = std::get<ast::expr::varName>(call.args[i].value);
+		const auto& carg = std::get<ast::varName>(call.args[i].value).name;
 		argArr[i] = (void*) (M.stack.data() + (M.functionExecutions.back().variablePtrs[carg]));
 	}
 	ffi_call(&funcDetail.cif, (void(*)())funcDetail.handle, (void*)RAVec.data(), argArr);

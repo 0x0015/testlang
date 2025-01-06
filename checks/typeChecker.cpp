@@ -13,14 +13,17 @@ ast::type getExprType(std::unordered_map<std::string, ast::type>& definedVars, c
 			std::cerr<<"Internal Error: call to an unknown function"<<std::endl;
 			return ast::type::none_type;
 		}
-	}else if(std::holds_alternative<ast::expr::varName>(exp.value)){
-		return definedVars[std::get<ast::expr::varName>(exp.value)];
+	}else if(std::holds_alternative<ast::varName>(exp.value)){
+		return definedVars[std::get<ast::varName>(exp.value).name];
 	}else{
 		std::cerr<<"Error: unknown internal argument type error"<<std::endl;
 		return ast::type::none_type;
 	}
 }
 
+//TODO: re-engineer this whole thing to be a bit more functional and nicer.
+//well I'm at it make sure to fill up all the types of the ast::varName structs and then have a pass to verify that they have all been filled
+//also seperate out the function def to call matching to another pass (and then verify that they have indeed all been matched)
 bool checkTypeUsesValid(ast::context& context){
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> functions;
 	for(auto& func : context.funcs){
@@ -52,15 +55,16 @@ bool checkTypeUsesValid(ast::context& context){
 					definedVars[decl.name] = decl.ty;
 				}
 			}else if(std::holds_alternative<ast::function::assignment>(state)){
-				const auto& asgn = std::get<ast::function::assignment>(state);
+				auto& asgn = std::get<ast::function::assignment>(state);
 				ast::type asgnType;
-				if(std::holds_alternative<std::string>(asgn.assignFrom.value)){
-					const auto& fromName = std::get<std::string>(asgn.assignFrom.value);
-					if(!definedVars.contains(fromName)){	
-						std::cerr<<"Error: unable to assign from unknown variable \""<<fromName<<"\""<<std::endl;
+				if(std::holds_alternative<ast::varName>(asgn.assignFrom.value)){
+					auto& fromName = std::get<ast::varName>(asgn.assignFrom.value);
+					if(!definedVars.contains(fromName.name)){	
+						std::cerr<<"Error: unable to assign from unknown variable \""<<fromName.name<<"\""<<std::endl;
 						errored = true;
 					}else{
-						asgnType = definedVars[fromName];
+						asgnType = definedVars[fromName.name];
+						fromName.matchedType = asgnType;
 					}
 				}else if(std::holds_alternative<ast::literal>(asgn.assignFrom.value)){	
 					const auto& fromLit = std::get<ast::literal>(asgn.assignFrom.value);
@@ -88,8 +92,8 @@ bool checkTypeUsesValid(ast::context& context){
 	
 					bool unableToDecernCallargTypes = false;
 					for(unsigned int i=0;i<call.args.size();i++){
-						if(std::holds_alternative<ast::expr::varName>(call.args[i].value) && !definedVars.contains(std::get<ast::expr::varName>(call.args[i].value))){
-							std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::expr::varName>(call.args[i].value)<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
+						if(std::holds_alternative<ast::varName>(call.args[i].value) && !definedVars.contains(std::get<ast::varName>(call.args[i].value).name)){
+							std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::varName>(call.args[i].value).name<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
 							errored = true;
 							unableToDecernCallargTypes = true;
 							break;

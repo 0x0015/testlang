@@ -18,8 +18,8 @@ void ast::expr::dump() const{
 			std::cout<<"「matched」";
 		}
 		std::cout<<std::endl;
-	}else if(std::holds_alternative<std::string>(value)){
-		std::cout<<std::get<std::string>(value);
+	}else if(std::holds_alternative<varName>(value)){
+		std::cout<<std::get<varName>(value).name;
 	}else{
 		std::cout<<"[Unknown Expression]";
 	}

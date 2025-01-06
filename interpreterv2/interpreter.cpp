@@ -97,9 +97,9 @@ std::vector<uint8_t> interpreterv2::interpreter::interpretExpr(const ast::expr& 
 	}else if(std::holds_alternative<ast::call>(expr.value)){
 		const auto& call = std::get<ast::call>(expr.value);
 		return interpretCall(call);
-	}else if(std::holds_alternative<ast::expr::varName>(expr.value)){
-		const auto& varName = std::get<ast::expr::varName>(expr.value);
-		return varEntries[varName];
+	}else if(std::holds_alternative<ast::varName>(expr.value)){
+		const auto& varName = std::get<ast::varName>(expr.value);
+		return varEntries[varName.name];
 	}else{
 		std::cerr<<"Error: Unable to interpret blank expr!"<<std::endl;
 		return {};

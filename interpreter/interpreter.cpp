@@ -15,8 +15,8 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 			addVariableToInterpreterStack(M, decl.name, decl.ty.getSize());
 		}else if(std::holds_alternative<ast::function::assignment>(state)){
 			const auto& asgn = std::get<ast::function::assignment>(state);
-			if(std::holds_alternative<std::string>(asgn.assignFrom.value)){
-				const auto& from = std::get<std::string>(asgn.assignFrom.value);
+			if(std::holds_alternative<ast::varName>(asgn.assignFrom.value)){
+				const auto& from = std::get<ast::varName>(asgn.assignFrom.value).name;
 				std::memcpy(M.stack.data() + M.functionExecutions.back().variablePtrs[asgn.assignTo], M.stack.data() + M.functionExecutions.back().variablePtrs[from], M.functionExecutions.back().variableSizes[from]);
 			}else if(std::holds_alternative<ast::literal>(asgn.assignFrom.value)){
 				const auto& lit = std::get<ast::literal>(asgn.assignFrom.value);
@@ -38,8 +38,8 @@ void interpretFunction(interpreter::interpreter& M, const ast::function& func){
 					for(auto& arg : call.args){
 						//TODO: generalize calling to allow literals
 						//really though, I should do more compil-y memory management and put all the literals in a buffer, etc...
-						if(std::holds_alternative<ast::expr::varName>(arg.value))
-							M.functionExecutions.back().variablePtrs[std::get<ast::expr::varName>(arg.value)] = currentFunc.variablePtrs[std::get<ast::expr::varName>(arg.value)];
+						if(std::holds_alternative<ast::varName>(arg.value))
+							M.functionExecutions.back().variablePtrs[std::get<ast::varName>(arg.value).name] = currentFunc.variablePtrs[std::get<ast::varName>(arg.value).name];
 						else
 							std::cerr<<"Currently unable to evaluate function args of non-variable expressions.  Coming soon!"<<std::endl;
 					}

@@ -26,7 +26,8 @@ OBJS	= main.cpp.o\
 	  interpreter/externals.cpp.o \
 	  interpreterv2/interpreter.cpp.o \
 	  interpreterv2/builtin.cpp.o \
-	  interpreterv2/external.cpp.o
+	  interpreterv2/external.cpp.o \
+	  cCodeGen/cCodeGen.cpp.o
 
 
 OUT	= main
