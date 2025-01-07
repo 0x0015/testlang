@@ -1,18 +1,20 @@
 OBJS	= main.cpp.o\
 	  argParse.cpp.o \
-	  parse/fileDetails.cpp.o \
-	  parse/parseUtil.cpp.o \
-	  parse/errorUtil.cpp.o \
-	  parse/fileIO.cpp.o \
-	  parse/parse.cpp.o \
-	  parse/tokenize/basicTokenize.cpp.o \
-	  parse/tokenize/mediumTokenize.cpp.o \
-	  parse/parse/parseContext.cpp.o \
-	  parse/parse/parseFunction.cpp.o \
-	  parse/parse/parseType.cpp.o \
-	  parse/parse/parseLiteral.cpp.o \
-	  parse/parse/parseExpr.cpp.o \
+	  parser/fileDetails.cpp.o \
+	  parser/parseUtil.cpp.o \
+	  parser/errorUtil.cpp.o \
+	  parser/fileIO.cpp.o \
+	  parser/parse.cpp.o \
+	  parser/tokenize/basicTokenize.cpp.o \
+	  parser/tokenize/mediumTokenize.cpp.o \
+	  parser/parse/parseContext.cpp.o \
+	  parser/parse/parseBlock.cpp.o \
+	  parser/parse/parseFunction.cpp.o \
+	  parser/parse/parseType.cpp.o \
+	  parser/parse/parseLiteral.cpp.o \
+	  parser/parse/parseExpr.cpp.o \
 	  ast/ast.cpp.o \
+	  ast/ast_block.cpp.o \
 	  ast/ast_type.cpp.o \
 	  ast/ast_literal.cpp.o \
 	  ast/ast_expr.cpp.o \

@@ -5,6 +5,7 @@
 #include "parseLiteral.hpp"
 #include "../errorUtil.hpp"
 #include "parseExpr.hpp"
+#include "parseBlock.hpp"
 
 parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	//type
@@ -32,7 +33,7 @@ parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	offset += args->toksConsumed;
 	parse_debug_print("function parsed args");
 	//body
-	const auto& body = parseFunctionBody(tokens);
+	const auto& body = parseBlock(tokens);
 	if(!body)
 		return std::nullopt;
 	parse_debug_print("function parsed body");
@@ -131,118 +132,4 @@ parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const
 	return makeParseRes(output, 1);
 }
 
-parseRes<ast::function::declaration> parseFunctionBodyDeclaration(std::span<const mediumToken> tokens){
-	if(tokens.empty())
-		return std::nullopt;
-	auto tyTry = parseType(tokens);
-	if(!tyTry)
-		return std::nullopt;
-	int outputSize = tyTry->toksConsumed;
-	tokens = tokens.subspan(tyTry->toksConsumed);
 
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	const auto& name = std::get<basicToken>(tokens.front().value).val;
-	outputSize++;
-	tokens = tokens.subspan(1);
-
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	if(std::get<basicToken>(tokens.front().value).val != ";")
-		return std::nullopt;
-	outputSize++;
-	//don't need to shrink tokens for the last one
-	return makeParseRes(ast::function::declaration{tyTry->val, name}, outputSize);
-}
-
-parseRes<ast::function::assignment> parseFunctionBodyAssignment(std::span<const mediumToken> tokens){
-	if(tokens.size() < 4)
-		return std::nullopt;
-
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	const auto& asgnTo = std::get<basicToken>(tokens.front().value).val;
-	int outputSize = 1;
-	tokens = tokens.subspan(1);
-
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	if(std::get<basicToken>(tokens.front().value).val != "=")
-		return std::nullopt;
-	outputSize++;
-	tokens = tokens.subspan(1);
-
-	const auto& asgnFrom = parseExpr(tokens);
-	if(!asgnFrom)
-		return std::nullopt;
-	tokens = tokens.subspan(asgnFrom->toksConsumed);
-	outputSize += asgnFrom->toksConsumed;
-
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	if(std::get<basicToken>(tokens.front().value).val != ";")
-		return std::nullopt;
-	outputSize++;
-
-	return makeParseRes(ast::function::assignment{asgnTo, asgnFrom->val}, outputSize);
-}
-
-parseRes<ast::expr> parseFunctionBodyExpr(std::span<const mediumToken> tokens){
-	auto exprTry = parseExpr(tokens);
-	if(!exprTry)
-		return std::nullopt;
-	tokens = tokens.subspan(exprTry->toksConsumed);
-
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	if(std::get<basicToken>(tokens.front().value).val != ";")
-		return std::nullopt;
-
-	return makeParseRes(exprTry->val, exprTry->toksConsumed+1);
-}
-
-parseRes<std::vector<ast::function::statement>> parseFunctionBody(std::span<const mediumToken> tokens){
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
-		return std::nullopt;
-	const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
-	if(list.type != mediumToken::tokList::type_t::CURL_BRACK)
-		return std::nullopt;
-	std::vector<ast::function::statement> output;
-	std::span<const mediumToken> toks(list.value);
-	bool gotParseError = false;
-	while(!toks.empty()){
-		auto declTry = parseFunctionBodyDeclaration(toks);
-		if(declTry){
-			output.push_back(declTry->val);
-			toks = toks.subspan(declTry->toksConsumed);
-			continue;
-		}
-		auto asgnTry = parseFunctionBodyAssignment(toks);
-		if(asgnTry){
-			output.push_back(asgnTry->val);
-			toks = toks.subspan(asgnTry->toksConsumed);
-			continue;
-		}
-		auto exprTry = parseFunctionBodyExpr(toks);
-		if(exprTry){
-			output.push_back(exprTry->val);
-			toks = toks.subspan(exprTry->toksConsumed);
-			continue;
-		}
-		std::cerr<<"Found structure in function body that did not parse as either variable declaration, variable assignment, or function call"<<std::endl;
-		printErrorFileSpot(toks.front());
-		gotParseError = true;
-		break;
-	}
-	return makeParseRes(output, 1, gotParseError);
-}

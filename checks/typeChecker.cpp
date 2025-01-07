@@ -1,158 +1,220 @@
 #include "typeChecker.hpp"
 #include <unordered_map>
 #include <optional>
+#include <list>
 
-ast::type getExprType(std::unordered_map<std::string, ast::type>& definedVars, const ast::expr& exp){
-	if(std::holds_alternative<ast::literal>(exp.value)){
-		return std::get<ast::literal>(exp.value).ty;
-	}else if(std::holds_alternative<ast::call>(exp.value)){
-		const auto& call = std::get<ast::call>(exp.value);
-		if(call.validatedDef)
-			return call.validatedDef->get().ty;
-		else{
-			std::cerr<<"Internal Error: call to an unknown function"<<std::endl;
-			return ast::type::none_type;
+struct multiContextDefinedVars_t{
+private:
+	static inline ast::type defaultReturn = ast::type::none_type;
+public:
+	std::list<std::reference_wrapper<const std::unordered_map<std::string, ast::type>>> upperDefinedVars;
+	bool contains(const std::string& str) const{
+		for(const auto& definedVars : upperDefinedVars){
+			if(definedVars.get().contains(str))
+				return true;
 		}
-	}else if(std::holds_alternative<ast::varName>(exp.value)){
-		return definedVars[std::get<ast::varName>(exp.value).name];
-	}else{
-		std::cerr<<"Error: unknown internal argument type error"<<std::endl;
-		return ast::type::none_type;
+		return false;
 	}
+	const ast::type& at(const std::string& str) const{
+		for(const auto& definedVars : upperDefinedVars){
+			if(definedVars.get().contains(str))
+				return definedVars.get().at(str);
+		}
+		return defaultReturn;
+	}
+	multiContextDefinedVars_t(const multiContextDefinedVars_t& other, const std::unordered_map<std::string, ast::type>& definedVars){
+		upperDefinedVars = other.upperDefinedVars;
+		upperDefinedVars.push_front(std::cref(definedVars));//so newer(lower; more specific) contexts get searched first
+	}
+	multiContextDefinedVars_t(const std::unordered_map<std::string, ast::type>& definedVars){
+		upperDefinedVars = {std::cref(definedVars)};
+	}
+};
+
+std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiContextDefinedVars_t& definedVars, const ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
+	if(std::holds_alternative<ast::varName>(expr.value)){
+		auto& varName = std::get<ast::varName>(expr.value);
+		if(definedVars.contains(varName.name)){
+			varName.matchedType = definedVars.at(varName.name);
+			return *varName.matchedType;
+		}else{
+			std::cerr<<"Error: reference to unknown variable \""<<varName.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+		}
+	}else if(std::holds_alternative<ast::literal>(expr.value)){
+		auto& literal = std::get<ast::literal>(expr.value);
+		return literal.ty;
+	}else if(std::holds_alternative<ast::call>(expr.value)){
+		auto& call = std::get<ast::call>(expr.value);
+		const auto& possibleMatches = allFunctions.equal_range(call.name);
+
+		std::vector<ast::type> callArgTypes(call.args.size());
+		bool unableToDetermineArgTypes = false;
+		for(unsigned int i=0;i<call.args.size();i++){
+			auto argType = deriveExprTypeAndFill(call.args[i], definedVars, func, allFunctions);
+			if(argType){
+				callArgTypes[i] = *argType;
+			}else{
+				unableToDetermineArgTypes = true;
+			}
+		}
+		if(unableToDetermineArgTypes)
+			return std::nullopt;//error somewhere inside the arg type finding
+
+		std::optional<std::reference_wrapper<const ast::function>> matchingFunc;
+		unsigned int matchesFound = 0;
+		unsigned int numPossibleMatches = 0;
+		for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
+			numPossibleMatches++;
+			const auto& matchTry = it->second.get();
+			if(matchTry.args.size() != call.args.size()){
+				continue;
+			}
+			bool argsMatch = true;
+			for(unsigned int i=0;i<matchTry.args.size();i++){
+				if(matchTry.args[i].ty != callArgTypes[i]){
+					argsMatch = false;
+					break;
+				}
+			}
+			if(!argsMatch)
+				continue;
+	
+			//if you got here, all the args both exist and match
+			matchingFunc = std::cref(matchTry);
+			matchesFound++;
+		}
+
+		if(numPossibleMatches == 0){
+			std::cerr<<"Error: call to unknown function \""<<call.name<<"\""<<std::endl;
+			return std::nullopt;
+		}
+
+		if(!matchingFunc || matchesFound == 0 /*should be equivelent*/){
+			std::cerr<<"Error: no match found for call: ";
+			expr.dump();
+			std::cout<<"Candidates ("<<numPossibleMatches<<"): "<<std::endl;
+			for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
+				const auto& possibleMatch = it->second.get();
+				std::cout<<"\t";
+				possibleMatch.dump();
+			}
+			return std::nullopt;
+		}
+		if(matchesFound != 1){
+			std::cerr<<"Error: found multiple ("<<matchesFound<<") functions matching call to ";
+			expr.dump();
+			return std::nullopt;
+		}
+
+		call.validatedDef = *matchingFunc;
+		return matchingFunc->get().ty;
+	}
+
+	std::cerr<<"Error: expr of unknown type in function \""<<func.name<<"\""<<std::endl;
+	return std::nullopt;
 }
 
-//TODO: re-engineer this whole thing to be a bit more functional and nicer.
-//well I'm at it make sure to fill up all the types of the ast::varName structs and then have a pass to verify that they have all been filled
-//also seperate out the function def to call matching to another pass (and then verify that they have indeed all been matched)
-bool checkTypeUsesValid(ast::context& context){
-	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> functions;
-	for(auto& func : context.funcs){
-		functions.insert({func.name, std::cref(func)});
-	}
-	
+bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t& definedVars_up, const ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
+	std::unordered_map<std::string, ast::type> definedVars_current;
+	multiContextDefinedVars_t definedVars(definedVars_up, definedVars_current);
 	bool errored = false;
-	for(auto& func : context.funcs){
-		std::unordered_map<std::string, ast::type> definedVars;
-		for(const auto& arg : func.args){
-			if(definedVars.contains(arg.name)){
-				std::cerr<<"Error: Multiple arguments of same name \""<<arg.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+
+	for(unsigned int i=0;i<block.statements.size();i++){
+		auto& statement = block.statements[i];
+		if(std::holds_alternative<ast::block::declaration>(statement)){
+			const auto& decl = std::get<ast::block::declaration>(statement);
+			if(definedVars.contains(decl.name)){
+				std::cerr<<"Error: Redefintion of variable \""<<decl.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+				errored = true;
+			}else if(decl.ty == ast::type::void_type){
+				std::cerr<<"Error: Cannot declare variable \""<<decl.name<<"\" in function \""<<func.name<<"\" with type void"<<std::endl;
 				errored = true;
 			}else{
-				definedVars[arg.name] = arg.ty;
+				definedVars_current[decl.name] = decl.ty;
 			}
-		}
-		for(unsigned int i=0;i<func.body.size();i++){
-			auto& state = func.body[i];
-			if(std::holds_alternative<ast::function::declaration>(state)){
-				const auto& decl = std::get<ast::function::declaration>(state);
-				if(definedVars.contains(decl.name)){
-					std::cerr<<"Error: Redefintion of variable \""<<decl.name<<"\" in function \""<<func.name<<"\""<<std::endl;
-					errored = true;
-				}else if(decl.ty == ast::type::void_type){
-					std::cerr<<"Error: Cannot declare variable \""<<decl.name<<"\" in function \""<<func.name<<"\" with type void"<<std::endl;
-					errored = true;
-				}else{
-					definedVars[decl.name] = decl.ty;
-				}
-			}else if(std::holds_alternative<ast::function::assignment>(state)){
-				auto& asgn = std::get<ast::function::assignment>(state);
-				ast::type asgnType;
-				if(std::holds_alternative<ast::varName>(asgn.assignFrom.value)){
-					auto& fromName = std::get<ast::varName>(asgn.assignFrom.value);
-					if(!definedVars.contains(fromName.name)){	
-						std::cerr<<"Error: unable to assign from unknown variable \""<<fromName.name<<"\""<<std::endl;
-						errored = true;
-					}else{
-						asgnType = definedVars[fromName.name];
-						fromName.matchedType = asgnType;
-					}
-				}else if(std::holds_alternative<ast::literal>(asgn.assignFrom.value)){	
-					const auto& fromLit = std::get<ast::literal>(asgn.assignFrom.value);
-					asgnType = fromLit.ty;
-				}else{
-					std::cerr<<"Error: assignment is not assigning from any target"<<std::endl;
-					errored = true;
-				}
-				if(definedVars.contains(asgn.assignTo)){
-					if(definedVars[asgn.assignTo] != asgnType){
-						std::cerr<<"Error: assigning variable of type "<<asgnType.toString()<<" to variable \""<<asgn.assignTo<<"\" of type "<<definedVars[asgn.assignTo].toString()<<std::endl;
-						errored = true;
-					}
-				}else{
-					//add a new definition here for the variable
-					func.body.insert(func.body.begin() + i, ast::function::declaration{asgnType, asgn.assignTo});
-					definedVars[asgn.assignTo] = asgnType;
-					i++;
-				}
-			}else if(std::holds_alternative<ast::expr>(state)){
-				auto& exp = std::get<ast::expr>(state);
-				if(std::holds_alternative<ast::call>(exp.value)){
-					auto& call = std::get<ast::call>(exp.value);
-					const auto& funcs = functions.equal_range(call.name);
-	
-					bool unableToDecernCallargTypes = false;
-					for(unsigned int i=0;i<call.args.size();i++){
-						if(std::holds_alternative<ast::varName>(call.args[i].value) && !definedVars.contains(std::get<ast::varName>(call.args[i].value).name)){
-							std::cerr<<"Error: Use of undefined variable \""<<std::get<ast::varName>(call.args[i].value).name<<"\" in call to \""<<call.name<<"\", in function \""<<func.name<<"\""<<std::endl;
-							errored = true;
-							unableToDecernCallargTypes = true;
-							break;
-						}
-					}
-					if(unableToDecernCallargTypes)
-						continue;
-	
-					std::optional<std::reference_wrapper<const ast::function>> matchingFunc;
-					for(auto it = funcs.first; it != funcs.second; ++it){
-						const auto& func = it->second.get();
-						if(func.args.size() != call.args.size()){
-							continue;
-						}
-						bool argsMatch = true;
-						for(unsigned int i=0;i<func.args.size();i++){
-							ast::type varType = getExprType(definedVars, call.args[i]);
-							if(func.args[i].ty != varType){
-								argsMatch = false;
-								break;
-							}
-						}
-						if(!argsMatch)
-							continue;
-	
-						//if you got here, all the args both exist and match
-						matchingFunc = std::cref(func);
-					}
-					if(!matchingFunc){
-						//there was no matching function! figure out why
-						std::cerr<<"Error: No function definition for \""<<call.name<<"\" matching "<<call.name<<"(";
-						for(unsigned int i=0;i<call.args.size();i++){
-							ast::type varType = getExprType(definedVars, call.args[i]);
-							std::cerr<<varType.toString();
-							if(i+1 < call.args.size())
-								std::cerr<<", ";
-						}
-						std::cerr<<")"<<std::endl;
-						std::cerr<<"Candidates:"<<std::endl;
-						for(auto it = funcs.first; it != funcs.second; ++it){
-							const auto& func = it->second.get();
-							std::cerr<<"\t"<<func.ty.toString()<<" "<<func.name<<"(";
-							for(unsigned int i=0;i<func.args.size();i++){
-								std::cerr<<func.args[i].ty.toString();
-								if(i+1 < func.args.size())
-									std::cerr<<", ";
-							}
-							std::cerr<<")"<<std::endl;
-						}
-	
-						errored = true;
-					}
-					//realistically here I should do something with the matched functions (as I'm definitely going to need that)
-					call.validatedDef = matchingFunc;
-				}
+		}else if(std::holds_alternative<ast::block::assignment>(statement)){
+			auto& assign = std::get<ast::block::assignment>(statement);
+			const auto& assignFromType = deriveExprTypeAndFill(assign.assignFrom, definedVars, func, allFunctions);
+			if(!assignFromType){
+				errored = true;
+				continue;
 			}
+			if(definedVars.contains(assign.assignTo)){
+				if(definedVars.at(assign.assignTo) != *assignFromType){
+					std::cerr<<"Error: assigning variable of type "<<assignFromType->toString()<<" to variable \""<<assign.assignTo<<"\" of type "<<definedVars.at(assign.assignTo).toString()<<std::endl;
+					errored = true;
+				}
+			}else{
+				//add a new definition here for the variable
+				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, assign.assignTo});
+				definedVars_current[assign.assignTo] = *assignFromType;
+				i++;
+			}
+		}else if(std::holds_alternative<ast::expr>(statement)){
+			auto& expr = std::get<ast::expr>(statement);
+			const auto& exprType = deriveExprTypeAndFill(expr, definedVars, func, allFunctions);
+			if(!exprType){
+				errored = true;
+				continue;
+			}
+		}else if(std::holds_alternative<ast::block::ifStatement>(statement)){
+			auto& ifStatement = std::get<ast::block::ifStatement>(statement);
+			const auto& condExprType = deriveExprTypeAndFill(ifStatement.condition, definedVars, func, allFunctions);
+			if(!condExprType){
+				errored = true;
+				continue;
+			}
+			if(*condExprType != ast::type(ast::type::bool_type)){
+				std::cerr<<"Error: if statement condition must be a boolean (bool) value rather than "<<condExprType->toString()<<" in function \""<<func.name<<"\""<<std::endl;
+				errored = true;
+				continue;
+			}
+			if(!checkBlockTypeUsesValid(*ifStatement.ifBody, definedVars, func, allFunctions)){
+				errored = true;
+			}
+			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, allFunctions)){
+				errored = true;
+			}
+		}else{
+			//should never happen
+			std::cerr<<"Error: encountered statement of unknown type! (should never happen)"<<std::endl;
+			errored = true;
 		}
 	}
 
 	return !errored;
 }
+
+bool checkFunctionTypeUsesValid(ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
+	bool errored = false;
+	//add arguments as vars
+	std::unordered_map<std::string, ast::type> definedVars_current;
+	for(const auto& arg : func.args){
+		if(definedVars_current.contains(arg.name)){
+			std::cerr<<"Error: Multiple arguments of same name \""<<arg.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+			errored = true;
+		}else{
+			definedVars_current[arg.name] = arg.ty;
+		}
+	}
+
+	if(!checkBlockTypeUsesValid(func.body, definedVars_current, func, allFunctions))
+		errored = true;
+
+	return !errored;
+}
+
+bool checkTypeUsesValid(ast::context& context){
+	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> allFunctions;
+	for(auto& func : context.funcs){
+		allFunctions.insert({func.name, std::cref(func)});
+	}
+
+	bool errored = false;
+	for(auto& func : context.funcs){
+		errored = !checkFunctionTypeUsesValid(func, allFunctions) || errored; //note: needs this order otherwise the call is culled as errored is (usually) false
+	}
+	return !errored;
+}
+
 

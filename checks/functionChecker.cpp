@@ -10,7 +10,7 @@ bool checkFunctionsDefined(const ast::context& context){
 
 	bool errored = false;
 	for(const auto& func : context.funcs){
-		for(const auto& state : func.body){
+		for(const auto& state : func.body.statements){
 			if(std::holds_alternative<ast::expr>(state)){
 				const auto& expr = std::get<ast::expr>(state);
 				if(std::holds_alternative<ast::call>(expr.value)){

@@ -9,12 +9,12 @@ void addVariableToInterpreterStack(interpreter::interpreter& M, const std::strin
 }
 
 void interpretFunction(interpreter::interpreter& M, const ast::function& func){
-	for(const auto& state : func.body){
-		if(std::holds_alternative<ast::function::declaration>(state)){
-			const auto& decl = std::get<ast::function::declaration>(state);
+	for(const auto& state : func.body.statements){
+		if(std::holds_alternative<ast::block::declaration>(state)){
+			const auto& decl = std::get<ast::block::declaration>(state);
 			addVariableToInterpreterStack(M, decl.name, decl.ty.getSize());
-		}else if(std::holds_alternative<ast::function::assignment>(state)){
-			const auto& asgn = std::get<ast::function::assignment>(state);
+		}else if(std::holds_alternative<ast::block::assignment>(state)){
+			const auto& asgn = std::get<ast::block::assignment>(state);
 			if(std::holds_alternative<ast::varName>(asgn.assignFrom.value)){
 				const auto& from = std::get<ast::varName>(asgn.assignFrom.value).name;
 				std::memcpy(M.stack.data() + M.functionExecutions.back().variablePtrs[asgn.assignTo], M.stack.data() + M.functionExecutions.back().variablePtrs[from], M.functionExecutions.back().variableSizes[from]);

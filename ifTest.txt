@@ -1,0 +1,17 @@
+
+void main(){
+	println(1);
+	if(true){
+		println(2);
+	}
+	println(3);
+	if(false){
+		println(4);
+	}
+	println(5);
+	if(false){
+		println(6);
+	}else{
+		println(7);
+	}
+}

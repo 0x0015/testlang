@@ -3,7 +3,7 @@ extern int abs(int x);
 
 void main(){
 	int x;
-	x = 3;
+	x = -3;
 	println(x);
-	abs(x);
+	println(abs(x));
 }

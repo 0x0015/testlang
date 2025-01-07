@@ -1,8 +1,8 @@
 #include "ast_type.hpp"
 #include <iostream>
-#include "../parse/parse/parseType.hpp"
-#include "../parse/tokenize/basicTokenize.hpp"
-#include "../parse/tokenize/mediumTokenize.hpp"
+#include "../parser/parse/parseType.hpp"
+#include "../parser/tokenize/basicTokenize.hpp"
+#include "../parser/tokenize/mediumTokenize.hpp"
 
 ast::type ast::type::fromString(const std::string_view type){
 	auto basicToks = basicTokenizeString(type);

@@ -1,9 +1,9 @@
 #include <iostream>
-#include "parse/parse.hpp"
+#include "parser/parse.hpp"
 #include "checks/functionChecker.hpp"
 #include "checks/typeChecker.hpp"
 #include "builtins/builtins.hpp"
-#include "parse/parseUtil.hpp"
+#include "parser/parseUtil.hpp"
 #include "argParse.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreterv2/interpreter.hpp"

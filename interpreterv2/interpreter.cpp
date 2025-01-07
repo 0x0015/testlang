@@ -73,16 +73,23 @@ std::vector<uint8_t> getLiteralValue(const ast::literal& lit){
 	}
 }
 
-bool interpreterv2::interpreter::interpretStatement(const ast::function::statement& state){
-	if(std::holds_alternative<ast::function::declaration>(state)){
-		const auto& decl = std::get<ast::function::declaration>(state);
+bool interpreterv2::interpreter::interpretStatement(const ast::block::statement& state){
+	if(std::holds_alternative<ast::block::declaration>(state)){
+		const auto& decl = std::get<ast::block::declaration>(state);
 		varEntries[decl.name] = std::vector<uint8_t>(decl.ty.getSize());
-	}else if(std::holds_alternative<ast::function::assignment>(state)){
-		const auto& assignment = std::get<ast::function::assignment>(state);
+	}else if(std::holds_alternative<ast::block::assignment>(state)){
+		const auto& assignment = std::get<ast::block::assignment>(state);
 		varEntries[assignment.assignTo] = interpretExpr(assignment.assignFrom);
 	}else if(std::holds_alternative<ast::expr>(state)){
 		const auto& expr = std::get<ast::expr>(state);
 		interpretExpr(expr);
+	}else if(std::holds_alternative<ast::block::ifStatement>(state)){
+		const auto& ifState = std::get<ast::block::ifStatement>(state);
+		if(interpretExpr(ifState.condition).front() != 0){//blindly treat the value as a bool.  What could go wrong (should be already type checked, so should be fine)
+			interpretBlock(*ifState.ifBody);
+		}else{
+			interpretBlock(*ifState.elseBody);
+		}
 	}else{
 		std::cerr<<"Error: unable to interpret statement with no value"<<std::endl;
 		return false;
@@ -122,9 +129,7 @@ std::vector<uint8_t> interpreterv2::interpreter::interpretCall(const ast::call& 
 		varEntries[func.args[i].name] = interpretExpr(call.args[i]);
 	}
 	
-	for(const auto& state : func.body){
-		interpretStatement(state);
-	}
+	interpretBlock(func.body);
 
 	//cleanup local vars after the function call is over
 	for(unsigned int i=0;i<call.args.size();i++){
@@ -132,5 +137,11 @@ std::vector<uint8_t> interpreterv2::interpreter::interpretCall(const ast::call& 
 	} 
 
 	return {};//change once the return function is implemented
+}
+
+void interpreterv2::interpreter::interpretBlock(const ast::block& block){
+	for(const auto& state : block.statements){
+		interpretStatement(state);
+	}
 }
 

@@ -3,8 +3,8 @@
 #include <dlfcn.h>
 #include <cstring>
 #include "ffi.h"
-#include "../parse/fileIO.hpp"
-#include "../parse/parseUtil.hpp"
+#include "../parser/fileIO.hpp"
+#include "../parser/parseUtil.hpp"
 
 namespace interpreterv2{
 

@@ -27,7 +27,7 @@ void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_map<st
 
 void findUsedFunctions_iter(std::reference_wrapper<const ast::function> funcToSearch, std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
 	foundFuncs.emplace(std::make_pair(funcToSearch.get().name, funcToSearch));
-	for(const auto& state : funcToSearch.get().body){
+	for(const auto& state : funcToSearch.get().body.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
 			findUsedFunctions_iter_addExpr(expr, foundFuncs);
@@ -57,12 +57,12 @@ void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::t
 }
 
 void findUsedTypes_iter(std::reference_wrapper<const ast::function> funcToSearch, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes){
-	for(const auto& state : funcToSearch.get().body){
+	for(const auto& state : funcToSearch.get().body.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
 			findUsedTypes_iter_addExpr(expr, foundTypes);
-		}else if(std::holds_alternative<ast::function::declaration>(state)){
-			const auto& decl = std::get<ast::function::declaration>(state);
+		}else if(std::holds_alternative<ast::block::declaration>(state)){
+			const auto& decl = std::get<ast::block::declaration>(state);
 			foundTypes[decl.ty] = {};
 		}
 	}
