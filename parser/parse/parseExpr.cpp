@@ -2,7 +2,7 @@
 #include "../tokenize/mediumTokenize.hpp"
 #include "parseLiteral.hpp"
 
-parseRes<ast::call> parseCall(std::span<const mediumToken> tokens){	
+parseRes<ast::call> parseCall(std::span<const mediumToken> tokens){
 	if(tokens.size() < 2)
 		return std::nullopt;
 	if(!std::holds_alternative<basicToken>(tokens.front().value))

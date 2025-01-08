@@ -7,10 +7,11 @@ void main(){
 void anotherFunction(){
 	println(-1);
 	var = 42;//cannot yet pass literals directly into most functions
-	yetAnother(var);
+	println(yetAnother(var));
 }
 
-void yetAnother(int input){
+float yetAnother(int input){
 	println(input);
 	println(3.1415);
+	return(2.71);
 }

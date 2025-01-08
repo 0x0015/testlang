@@ -18,12 +18,16 @@ void ast::block::dump() const{
 			std::cout<<";"<<std::endl;
 		}else if(std::holds_alternative<ifStatement>(state)){
 			const auto& ifState = std::get<ifStatement>(state);
-			std::cout<<"if statement: if(";
+			std::cout<<"\tIf statement: if(";
 			ifState.condition.dump();
-			std::cout<<") then ";
+			std::cout<<"\t) then ";
 			ifState.ifBody->dump();
-			std::cout<<" else ";
+			std::cout<<"\t else ";
 			ifState.elseBody->dump();
+		}else if(std::holds_alternative<returnStatement>(state)){
+			const auto& retState = std::get<returnStatement>(state);
+			std::cout<<"\tReturn: ";
+			retState.val.dump();
 		}else{
 			std::cout<<"\tUnknown statement"<<std::endl;
 		}

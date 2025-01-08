@@ -137,6 +137,34 @@ parseRes<ast::block::ifStatement> parseIfStatement(std::span<const mediumToken> 
 	return makeParseRes(ast::block::ifStatement{condExpr->val, std::make_shared<ast::block>(ifBlock->val), std::make_shared<ast::block>(elseBlock->val)}, 5);
 }
 
+parseRes<ast::block::returnStatement> parseReturnStatement(std::span<const mediumToken> tokens){
+	if(tokens.size() < 3)
+		return std::nullopt;
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "return")
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<mediumToken::tokList>(tokens.front().value).type != mediumToken::tokList::PAREN)
+		return std::nullopt;
+	auto retVal = parseExpr(std::get<mediumToken::tokList>(tokens.front().value).value);
+	if(!retVal)
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != ";")
+		return std::nullopt;
+
+	//always consumes 3
+	return makeParseRes(ast::block::returnStatement{retVal->val}, 3);
+}
+
 parseRes<std::vector<ast::block::statement>> parseBlock_internal(std::span<const mediumToken> tokens){
 	std::vector<ast::block::statement> output;
 	bool gotParseError = false;
@@ -152,6 +180,12 @@ parseRes<std::vector<ast::block::statement>> parseBlock_internal(std::span<const
 		if(asgnTry){
 			output.push_back(asgnTry->val);
 			tokens = tokens.subspan(asgnTry->toksConsumed);
+			continue;
+		}
+		auto retTry = parseReturnStatement(tokens);
+		if(retTry){
+			output.push_back(retTry->val);
+			tokens = tokens.subspan(retTry->toksConsumed);
 			continue;
 		}
 		auto exprTry = parseExprStatement(tokens);

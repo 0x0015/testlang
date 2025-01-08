@@ -8,6 +8,7 @@ namespace interpreterv2{
 	bool interpret(const ast::context& context, const std::string_view entryPoint, std::span<const std::string> linkLibs = {});
 	struct interpreter{
 		std::unordered_map<std::string, std::vector<uint8_t>> varEntries;
+		std::vector<uint8_t> returnBuffer;
 		bool interpretStatement(const ast::block::statement& statement);
 		std::vector<uint8_t> interpretExpr(const ast::expr& expr);
 		std::vector<uint8_t> interpretCall(const ast::call& call);

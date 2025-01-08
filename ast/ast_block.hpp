@@ -22,7 +22,10 @@ namespace ast{
 			std::shared_ptr<block> ifBody;
 			std::shared_ptr<block> elseBody;
 		};
-		using statement = std::variant<declaration, assignment, ifStatement, expr>;
+		struct returnStatement{
+			expr val;
+		};
+		using statement = std::variant<declaration, assignment, ifStatement, returnStatement, expr>;
 		std::vector<statement> statements;
 		void dump() const;
 	};

@@ -175,6 +175,18 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, allFunctions)){
 				errored = true;
 			}
+		}else if(std::holds_alternative<ast::block::returnStatement>(statement)){
+			auto& retStatement = std::get<ast::block::returnStatement>(statement);
+			const auto& retValType = deriveExprTypeAndFill(retStatement.val, definedVars, func, allFunctions);
+			if(!retValType){
+				errored = true;
+				continue;
+			}
+			if(*retValType != func.ty){
+				std::cerr<<"Error: return statement returns value of type "<<retValType->toString()<<" rather than function \""<<func.name<<"\"'s return type of "<<func.ty.toString()<<std::endl;
+				errored = true;
+				continue;
+			}
 		}else{
 			//should never happen
 			std::cerr<<"Error: encountered statement of unknown type! (should never happen)"<<std::endl;

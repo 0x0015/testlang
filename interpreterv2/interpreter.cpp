@@ -90,6 +90,9 @@ bool interpreterv2::interpreter::interpretStatement(const ast::block::statement&
 		}else{
 			interpretBlock(*ifState.elseBody);
 		}
+	}else if(std::holds_alternative<ast::block::returnStatement>(state)){
+		const auto& ret = std::get<ast::block::returnStatement>(state);
+		returnBuffer = interpretExpr(ret.val);
 	}else{
 		std::cerr<<"Error: unable to interpret statement with no value"<<std::endl;
 		return false;
@@ -136,7 +139,7 @@ std::vector<uint8_t> interpreterv2::interpreter::interpretCall(const ast::call& 
 		varEntries.erase(func.args[i].name);
 	} 
 
-	return {};//change once the return function is implemented
+	return returnBuffer;//change once the return function is implemented
 }
 
 void interpreterv2::interpreter::interpretBlock(const ast::block& block){
