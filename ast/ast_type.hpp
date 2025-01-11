@@ -20,11 +20,17 @@ namespace ast{
 			array_type(const type& t_ty, unsigned int len) : ty(std::make_shared<type>(t_ty)), length(len){}
 		};
 		using tuple_type = std::vector<type>;
-		std::variant<builtin_type, array_type, tuple_type> ty;
+		struct alias_type{
+			std::string name;
+			std::shared_ptr<type> underlyingType;
+			bool strict = false;
+		};
+		std::variant<builtin_type, array_type, tuple_type, alias_type> ty;
 		type() = default;
 		type(builtin_type builtin_ty) : ty(builtin_ty){}
 		type(const array_type& array_ty) : ty(array_ty){}
 		type(const tuple_type& tuple_ty) : ty(tuple_ty){}
+		type(const alias_type& alias_ty);
 		constexpr bool operator==(const type& other) const{
 			if(ty.index() != other.ty.index())
 				return false;
@@ -44,6 +50,11 @@ namespace ast{
 					if(! t1[i].operator==(t2[i])) return false;
 				}
 				return true;
+			}
+			if(std::holds_alternative<alias_type>(ty)){
+				const auto& t1 = std::get<alias_type>(ty);
+				const auto& t2 = std::get<alias_type>(other.ty);
+				return t1.underlyingType->operator==(*t2.underlyingType) && t1.strict == t2.strict;
 			}
 			return false;
 		}

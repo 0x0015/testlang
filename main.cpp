@@ -7,6 +7,7 @@
 #include "argParse.hpp"
 #include "interpreter/interpreter.hpp"
 #include "interpreterv2/interpreter.hpp"
+#include "cCodeGen/cCodeGen.hpp"
 
 int main(int argc, char** argv){
 	auto args = argVals::parse(argc, argv);
@@ -43,18 +44,6 @@ int main(int argc, char** argv){
 		//new is slower, but should be more fleshed out
 		interpreterv2::interpret(*parseRes, "main", args->links);
 	}
-	/*
 
-	auto val = result.value();
-	addBuiltins(val);
-
-
-	if(!errored){
-		val.dump();
-		interpreter::interpret(val, "main");
-	}
-	
-
-	return errored;
-	*/
+	cCodeGen::genCCode(*parseRes, "main");
 }

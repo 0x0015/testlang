@@ -132,4 +132,110 @@ parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const
 	return makeParseRes(output, 1);
 }
 
+parseRes<std::monostate> looksLikeFunction(std::span<const mediumToken> tokens){
+	//type
+	auto ty = parseType(tokens);
+	int offset = 0;
+	if(ty){
+		tokens = tokens.subspan(ty->toksConsumed);
+		offset+=ty->toksConsumed;
+		parse_debug_print("function parsed type");
+	}else{
+		if(tokens.empty())
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		tokens = tokens.subspan(1);
+		offset++;
+	}
+	//name
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	offset++;
+	parse_debug_print("function parsed name");
+	//args
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	const auto& argList = std::get<mediumToken::tokList>(tokens.front().value);
+	if(argList.type != mediumToken::tokList::type_t::PAREN)
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	offset++;
+	parse_debug_print("function parsed args");
+	//body
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
+	if(list.type != mediumToken::tokList::type_t::CURL_BRACK)
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	offset++;
+	parse_debug_print("function parsed body");
 
+	return makeParseRes(std::monostate{}, offset);
+}
+
+//mostly copied from parseFunction
+parseRes<std::monostate> looksLikeExternalFunction(std::span<const mediumToken> tokens){
+	//extern
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "extern")
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	int offset = 1;
+	//type
+	auto ty = parseType(tokens);
+	if(ty){
+		tokens = tokens.subspan(ty->toksConsumed);
+		offset+=ty->toksConsumed;
+		parse_debug_print("function parsed type");
+	}else{
+		if(tokens.empty())
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		tokens = tokens.subspan(1);
+		offset++;
+	}
+	parse_debug_print("extern function parsed type");
+	//name
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	offset++;
+	parse_debug_print("extern function parsed name");
+	//args
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	const auto& argList = std::get<mediumToken::tokList>(tokens.front().value);
+	if(argList.type != mediumToken::tokList::type_t::PAREN)
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+	offset++;
+
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != ";")
+		return std::nullopt;
+	offset++;
+
+	parse_debug_print("function parsed args");
+
+	return makeParseRes(std::monostate{}, offset);
+}

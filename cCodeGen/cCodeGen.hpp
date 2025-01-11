@@ -14,9 +14,8 @@ namespace cCodeGen{
 		std::string cName;
 		int isPointer = 0;
 	};
-	bool genCCode(const ast::context& context, const std::string_view entryPoint, bool autoBuild = false, std::span<const std::string> linkLibs = {});
+	std::string genCCode(const ast::context& context, const std::string_view entryPoint, bool autoBuild = false, std::span<const std::string> linkLibs = {});
 	std::unordered_map<std::string, std::reference_wrapper<const ast::function>> findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint);
 	std::unordered_map<ast::type, cTypeInfo, typeHasher> findUsedTypes(std::reference_wrapper<const ast::function> entrypoint);
-	cTypeInfo genCTypeInfo(const ast::type& ty);
-	void genUsedCTypes(std::unordered_map<ast::type, cTypeInfo, typeHasher>& usedTypes);
+	std::string genUsedCTypes(std::unordered_map<ast::type, cTypeInfo, typeHasher>& usedTypes);
 }

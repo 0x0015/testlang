@@ -4,7 +4,7 @@
 #include "../fileIO.hpp"
 
 void basicToken::print() const{
-	std::cout<<val<<" @ ";
+	std::cout<<"\""<<val<<"\" @ ";
 	file.print();
 }
 
@@ -44,7 +44,7 @@ std::optional<std::vector<basicToken>> parseStringsAndComments(const std::string
 			i+=2;
 			bool foundEnd = false;
 			for(;i<file.size();i++){
-				if(file[i] == '\n'){
+				if(file[i] == '\n' || i+2 == file.size() /*fixes line comments at end of file*/){
 					foundEnd = true;
 					i++;
 					break;
@@ -95,7 +95,6 @@ std::optional<std::vector<basicToken>> basicTokenizeString(const std::string_vie
 
 	if(!commentAndStringed)
 		return std::nullopt;
-	
 
 	std::vector<basicToken> output;
 
@@ -123,7 +122,7 @@ std::optional<std::vector<basicToken>> basicTokenizeString(const std::string_vie
 						output.back().file.fileSize = 0;
 					}
 				}
-				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ',', '='};
+				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ',', '=', '+', '-', '*', '/', '<', '>'};
 				if(isInList(contents_val[i], singleCharToks)){
 					if(output.back().val.size() == 0){
 						output.back().val += contents_val[i];

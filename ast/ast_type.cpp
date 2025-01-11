@@ -44,6 +44,15 @@ std::string ast::type::toString() const{
 		}
 		output += ")";
 		return output;
+	}else if(std::holds_alternative<alias_type>(ty)){
+		const auto& alias = std::get<alias_type>(ty);
+		std::string output = alias.name + " (";
+		if(alias.strict)
+			output += "strict ";
+		output += "alias of ";
+		output += alias.underlyingType->toString();
+		output += ")";
+		return output;
 	}else{
 		std::cerr<<"An unknown error (theoretically impossible) in type::toString has occurred"<<std::endl;
 		return "void";
@@ -77,9 +86,26 @@ unsigned int ast::type::getSize() const{
 		return output;
 	}else if(std::holds_alternative<ast::type::tuple_type>(ty)){
 		return 8;// must store 64 bit addr I suppose (though this should really be platform dependent)
+	}else if(std::holds_alternative<ast::type::alias_type>(ty)){
+		return std::get<alias_type>(ty).underlyingType->getSize();
 	}else{
 		std::cerr<<"Error: unknown type of type"<<std::endl;
 		return 0;
 	}
+}
+
+ast::type fullyDealias(const ast::type& ty){
+	if(std::holds_alternative<ast::type::alias_type>(ty.ty)){
+		return fullyDealias(*std::get<ast::type::alias_type>(ty.ty).underlyingType);
+	}
+	return ty;
+}
+
+//an alias will always be made to be an alias of a basic (builtin/tuple/array) type, eg. aliases of aliases will be simplified.
+ast::type::type(const type::alias_type& alias_ty){
+	alias_type al_ty{alias_ty.name};
+	al_ty.strict = alias_ty.strict;
+	al_ty.underlyingType = std::make_shared<type>(fullyDealias(*alias_ty.underlyingType));
+	ty = al_ty;
 }
 

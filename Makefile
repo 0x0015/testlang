@@ -10,6 +10,7 @@ OBJS	= main.cpp.o\
 	  parser/parse/parseContext.cpp.o \
 	  parser/parse/parseBlock.cpp.o \
 	  parser/parse/parseFunction.cpp.o \
+	  parser/parse/parseAlias.cpp.o \
 	  parser/parse/parseType.cpp.o \
 	  parser/parse/parseLiteral.cpp.o \
 	  parser/parse/parseExpr.cpp.o \
@@ -29,7 +30,8 @@ OBJS	= main.cpp.o\
 	  interpreterv2/interpreter.cpp.o \
 	  interpreterv2/builtin.cpp.o \
 	  interpreterv2/external.cpp.o \
-	  cCodeGen/cCodeGen.cpp.o
+	  cCodeGen/cCodeGen.cpp.o \
+	  cCodeGen/cTypes.cpp.o
 
 
 OUT	= main

@@ -1,4 +1,6 @@
 //no'ther comment here
+alias int -> myStruct;
+strict alias myStruct -> myStruct2;
 void main(){
 //comment here
 	int myVar; //this is a comment
@@ -16,8 +18,11 @@ void main(){
 	println(myVar);
 	println(3.14159);
 	println(inferredVar);
+	myStruct testVar2;
+	myStruct2 testVar3;
 }
 
 int test2(float testArg){
 }
+
 

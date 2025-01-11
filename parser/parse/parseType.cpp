@@ -60,6 +60,18 @@ parseRes<ast::type::tuple_type> parseTupleType(std::span<const mediumToken> toke
 	return makeParseRes(output, 1);
 }
 
+parseRes<ast::type::alias_type> parseAliasType(std::span<const mediumToken> tokens){	
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const basicToken bToken = std::get<basicToken>(tokens.front().value);
+	if(!parserKnownAliases.contains(bToken.val))
+		return std::nullopt;
+	return makeParseRes(parserKnownAliases[bToken.val], 1);
+}
+
+
 parseRes<ast::type> parseType(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
@@ -72,13 +84,20 @@ parseRes<ast::type> parseType(std::span<const mediumToken> tokens){
 		consumed += builtinTry->toksConsumed;
 		ty = builtinTry->val;
 	}else{
-		auto tupleTry = parseTupleType(tokens);
-		if(tupleTry){
-			tokens = tokens.subspan(tupleTry->toksConsumed);
-			consumed += tupleTry->toksConsumed;
-			ty = tupleTry->val;
-		}else
-			return std::nullopt;	
+		auto aliasTry = parseAliasType(tokens);
+		if(aliasTry){
+			tokens = tokens.subspan(aliasTry->toksConsumed);
+			consumed += aliasTry->toksConsumed;
+			ty = aliasTry->val;
+		}else{
+			auto tupleTry = parseTupleType(tokens);
+			if(tupleTry){
+				tokens = tokens.subspan(tupleTry->toksConsumed);
+				consumed += tupleTry->toksConsumed;
+				ty = tupleTry->val;
+			}else
+				return std::nullopt;
+		}
 	}
 	while(!tokens.empty()){
 		auto arrayTry = parseArrayType(tokens, ty);

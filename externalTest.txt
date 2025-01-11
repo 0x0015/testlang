@@ -6,5 +6,4 @@ void main(){
 	x = -3;
 	println(x);
 	println(abs(x));
-	println(myAbs(x));
 }
