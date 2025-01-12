@@ -37,11 +37,21 @@ parseRes<int> parseInt(std::span<const mediumToken> tokens){
 		return std::nullopt;
 	const auto& str = std::get<basicToken>(tokens.front().value).val;
 	std::istringstream iss(str);
+	unsigned int outputSize = 1;
+	if(str == "-"){
+		tokens = tokens.subspan(1);
+		if(tokens.empty())
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		iss = std::istringstream(str + std::get<basicToken>(tokens.front().value).val);
+		outputSize++;
+	}
 	int val;
 	iss >> std::noskipws >> val;
 	if(!iss.eof() || iss.fail())
 		return std::nullopt;
-	return makeParseRes(val, 1);
+	return makeParseRes(val, outputSize);
 }
 
 parseRes<float> parseFloat(std::span<const mediumToken> tokens){

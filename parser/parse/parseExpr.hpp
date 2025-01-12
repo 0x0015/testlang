@@ -5,6 +5,5 @@
 
 class mediumToken;
 
-parseRes<ast::call> parseCall(std::span<const mediumToken> tokens);
 parseRes<ast::expr> parseExpr(std::span<const mediumToken> tokens);
 

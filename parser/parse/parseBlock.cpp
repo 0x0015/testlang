@@ -30,6 +30,8 @@ parseRes<ast::block::declaration> parseDeclaration(std::span<const mediumToken> 
 	if(std::get<basicToken>(tokens.front().value).val != ";")
 		return std::nullopt;
 	outputSize++;
+
+	parse_debug_print("parsed variable declaration");
 	//don't need to shrink tokens for the last one
 	return makeParseRes(ast::block::declaration{tyTry->val, name}, outputSize);
 }
@@ -50,6 +52,8 @@ parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> to
 		return std::nullopt;
 	outputSize++;
 	tokens = tokens.subspan(1);
+
+	parse_debug_print("parsed assignment up to =");
 
 	const auto& asgnFrom = parseExpr(tokens);
 	if(!asgnFrom)
@@ -80,6 +84,8 @@ parseRes<ast::expr> parseExprStatement(std::span<const mediumToken> tokens){
 		return std::nullopt;
 	if(std::get<basicToken>(tokens.front().value).val != ";")
 		return std::nullopt;
+
+	parse_debug_print("parsed direct expr in block");
 
 	return makeParseRes(exprTry->val, exprTry->toksConsumed+1);
 }

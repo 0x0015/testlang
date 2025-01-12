@@ -14,6 +14,7 @@ OBJS	= main.cpp.o\
 	  parser/parse/parseType.cpp.o \
 	  parser/parse/parseLiteral.cpp.o \
 	  parser/parse/parseExpr.cpp.o \
+	  parser/parse/parseTemplate.cpp.o \
 	  ast/ast.cpp.o \
 	  ast/ast_block.cpp.o \
 	  ast/ast_type.cpp.o \

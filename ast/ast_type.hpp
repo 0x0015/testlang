@@ -25,12 +25,16 @@ namespace ast{
 			std::shared_ptr<type> underlyingType;
 			bool strict = false;
 		};
-		std::variant<builtin_type, array_type, tuple_type, alias_type> ty;
+		struct template_type{
+			unsigned int templateParamNum;
+		};
+		std::variant<builtin_type, array_type, tuple_type, alias_type, template_type> ty;
 		type() = default;
 		type(builtin_type builtin_ty) : ty(builtin_ty){}
 		type(const array_type& array_ty) : ty(array_ty){}
 		type(const tuple_type& tuple_ty) : ty(tuple_ty){}
 		type(const alias_type& alias_ty);
+		type(const template_type& template_ty):ty(template_ty){}
 		constexpr bool operator==(const type& other) const{
 			if(ty.index() != other.ty.index())
 				return false;
@@ -56,10 +60,15 @@ namespace ast{
 				const auto& t2 = std::get<alias_type>(other.ty);
 				return t1.underlyingType->operator==(*t2.underlyingType) && t1.strict == t2.strict;
 			}
+			if(std::holds_alternative<template_type>(ty)){
+				return std::get<template_type>(ty).templateParamNum == std::get<template_type>(other.ty).templateParamNum;
+			}
 			return false;
 		}
 		unsigned int getSize() const;
 		static type fromString(const std::string_view type);
 		std::string toString() const;
+		ast::type clone() const;
+		static ast::type fullyDealias(const ast::type& ty);
 	};
 }

@@ -53,6 +53,8 @@ std::string ast::type::toString() const{
 		output += alias.underlyingType->toString();
 		output += ")";
 		return output;
+	}else if(std::holds_alternative<template_type>(ty)){
+		return "template type";
 	}else{
 		std::cerr<<"An unknown error (theoretically impossible) in type::toString has occurred"<<std::endl;
 		return "void";
@@ -88,13 +90,16 @@ unsigned int ast::type::getSize() const{
 		return 8;// must store 64 bit addr I suppose (though this should really be platform dependent)
 	}else if(std::holds_alternative<ast::type::alias_type>(ty)){
 		return std::get<alias_type>(ty).underlyingType->getSize();
+	}else if(std::holds_alternative<template_type>(ty)){
+		std::cerr<<"Warning: got size of template type (template should be instantiated first)"<<std::endl;
+		return 0;
 	}else{
 		std::cerr<<"Error: unknown type of type"<<std::endl;
 		return 0;
 	}
 }
 
-ast::type fullyDealias(const ast::type& ty){
+ast::type ast::type::fullyDealias(const ast::type& ty){
 	if(std::holds_alternative<ast::type::alias_type>(ty.ty)){
 		return fullyDealias(*std::get<ast::type::alias_type>(ty.ty).underlyingType);
 	}
@@ -107,5 +112,36 @@ ast::type::type(const type::alias_type& alias_ty){
 	al_ty.strict = alias_ty.strict;
 	al_ty.underlyingType = std::make_shared<type>(fullyDealias(*alias_ty.underlyingType));
 	ty = al_ty;
+}
+
+ast::type ast::type::clone() const{
+	if(std::holds_alternative<builtin_type>(ty)){
+		return *this;
+	}else if(std::holds_alternative<array_type>(ty)){
+		const auto& array = std::get<array_type>(ty);
+		array_type output;
+		output.ty = std::make_shared<type>(*array.ty);
+		output.length = array.length;
+		return output;
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
+		tuple_type output;
+		output.resize(tuple.size());
+		for(unsigned int i=0;i<output.size();i++){
+			output[i] = tuple[i].clone();
+		}
+		return output;
+	}else if(std::holds_alternative<alias_type>(ty)){
+		const auto& alias = std::get<alias_type>(ty);
+		alias_type output;
+		output.underlyingType = std::make_shared<type>(*alias.underlyingType);
+		output.name = alias.name;
+		output.strict = alias.strict;
+		return output;
+	}else if(std::holds_alternative<template_type>(ty)){
+		return *this;
+	}else{
+		return ast::type::builtin_type::none_type;
+	}
 }
 

@@ -27,8 +27,14 @@ namespace ast{
 		positionStatus status = positionStatus::normal;
 		void dump() const;
 	};
+	struct functionTemplate{
+		unsigned int numTemplateArgs;
+		function func;
+		function instantiate(const std::vector<ast::type>& replacementTypes);
+	};
 	struct context{
 		std::vector<function> funcs;
+		std::vector<functionTemplate> funcTemplates;
 		void dump() const;
 	};
 }

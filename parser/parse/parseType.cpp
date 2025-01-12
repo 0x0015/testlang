@@ -1,12 +1,13 @@
 #include "parseType.hpp"
 #include "../tokenize/mediumTokenize.hpp"
+#include "parseTemplate.hpp"
 
 parseRes<ast::type::builtin_type> parseBuiltinType(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
-	const basicToken bToken = std::get<basicToken>(tokens.front().value);
+	const basicToken& bToken = std::get<basicToken>(tokens.front().value);
 	constexpr std::string_view basicTokNames[] = {"void", "int", "float", "bool"};
 	constexpr ast::type::builtin_type basicTokTypes[] = {ast::type::builtin_type::void_type, ast::type::builtin_type::int_type, ast::type::builtin_type::float_type, ast::type::builtin_type::bool_type};
 	auto found = findInList(bToken.val, basicTokNames);
@@ -60,15 +61,59 @@ parseRes<ast::type::tuple_type> parseTupleType(std::span<const mediumToken> toke
 	return makeParseRes(output, 1);
 }
 
-parseRes<ast::type::alias_type> parseAliasType(std::span<const mediumToken> tokens){	
+parseRes<ast::type::alias_type> parseAliasType(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
-	const basicToken bToken = std::get<basicToken>(tokens.front().value);
+	const basicToken& bToken = std::get<basicToken>(tokens.front().value);
 	if(!parserKnownAliases.contains(bToken.val))
 		return std::nullopt;
 	return makeParseRes(parserKnownAliases[bToken.val], 1);
+}
+
+parseRes<ast::type::template_type> parseTemplateType(std::span<const mediumToken> tokens){
+	if(!parserKnownTemplateTypesDefined)
+		return std::nullopt;
+	
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const basicToken& bToken = std::get<basicToken>(tokens.front().value);
+
+	for(unsigned int i=0;i<parserKnownTemplateTypesDefined->get().size();i++){
+		if(bToken.val == parserKnownTemplateTypesDefined->get()[i]){
+			return makeParseRes(ast::type::template_type{i}, 1);
+		}
+	}
+
+	return std::nullopt;
+}
+
+parseRes<ast::type::alias_type> parseAliasTypeTemplateInstantiation(std::span<const mediumToken> tokens){
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const basicToken& bToken = std::get<basicToken>(tokens.front().value);
+	if(!parserKnownAliasTemplates.contains(bToken.val))
+		return std::nullopt;
+	tokens = tokens.subspan(1);
+
+	parse_debug_print("template alias instantiation name found");
+
+	auto args = parseTemplateArgs(tokens);
+	if(!args)
+		return std::nullopt;
+
+	parse_debug_print("template alias instantiation args parsed");
+
+	const auto& aliasTemplate = parserKnownAliasTemplates[bToken.val];
+	if(aliasTemplate.numTemplateArgs != args->val.size())
+		return std::nullopt;
+
+	return makeParseRes(aliasTemplate.instantiate(args->val), args->toksConsumed+1);
 }
 
 
@@ -90,13 +135,27 @@ parseRes<ast::type> parseType(std::span<const mediumToken> tokens){
 			consumed += aliasTry->toksConsumed;
 			ty = aliasTry->val;
 		}else{
-			auto tupleTry = parseTupleType(tokens);
-			if(tupleTry){
-				tokens = tokens.subspan(tupleTry->toksConsumed);
-				consumed += tupleTry->toksConsumed;
-				ty = tupleTry->val;
-			}else
-				return std::nullopt;
+			auto templateTry = parseTemplateType(tokens);
+			if(templateTry){
+				tokens = tokens.subspan(templateTry->toksConsumed);
+				consumed += templateTry->toksConsumed;
+				ty = templateTry->val;
+			}else{
+				auto aliasTemplateTry = parseAliasTypeTemplateInstantiation(tokens);
+				if(aliasTemplateTry){
+					tokens = tokens.subspan(aliasTemplateTry->toksConsumed);
+					consumed += aliasTemplateTry->toksConsumed;
+					ty = aliasTemplateTry->val;
+				}else{
+					auto tupleTry = parseTupleType(tokens);
+					if(tupleTry){
+						tokens = tokens.subspan(tupleTry->toksConsumed);
+						consumed += tupleTry->toksConsumed;
+						ty = tupleTry->val;
+					}else
+						return std::nullopt;
+				}
+			}
 		}
 	}
 	while(!tokens.empty()){
