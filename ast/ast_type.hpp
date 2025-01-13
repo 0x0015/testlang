@@ -69,6 +69,7 @@ namespace ast{
 		static type fromString(const std::string_view type);
 		std::string toString() const;
 		ast::type clone() const;
+		std::size_t hash() const;
 		static ast::type fullyDealias(const ast::type& ty);
 	};
 }

@@ -3,6 +3,7 @@
 #include "../parser/parse/parseType.hpp"
 #include "../parser/tokenize/basicTokenize.hpp"
 #include "../parser/tokenize/mediumTokenize.hpp"
+#include "../hashCombine.hpp"
 
 ast::type ast::type::fromString(const std::string_view type){
 	auto basicToks = basicTokenizeString(type);
@@ -145,3 +146,25 @@ ast::type ast::type::clone() const{
 	}
 }
 
+std::size_t ast::type::hash() const{
+	if(std::holds_alternative<builtin_type>(ty)){
+		return hashing::hashValues(COMPILE_TIME_CRC32_STR("builtin_type"), std::get<builtin_type>(ty));
+	}else if(std::holds_alternative<array_type>(ty)){
+		const auto& array = std::get<array_type>(ty);
+		return hashing::hashValues(COMPILE_TIME_CRC32_STR("array_type"), array.ty->hash(), array.length);
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
+		std::size_t output = COMPILE_TIME_CRC32_STR("tuple_type");
+		for(const auto& tuple_ty : tuple)
+			output = hashing::hashValues(output, tuple_ty.hash());
+		return output;
+	}else if(std::holds_alternative<alias_type>(ty)){
+		const auto& alias = std::get<alias_type>(ty);
+		alias_type output;
+		return hashing::hashValues(COMPILE_TIME_CRC32_STR("alias_type"), alias.name, alias.strict, alias.underlyingType->hash());
+	}else if(std::holds_alternative<template_type>(ty)){
+		return hashing::hashValues(COMPILE_TIME_CRC32_STR("template_type"), std::get<template_type>(ty).templateParamNum);
+	}else{
+		return 0;
+	}
+}

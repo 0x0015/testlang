@@ -1,13 +1,12 @@
 #pragma once
 #include "../ast/ast.hpp"
 #include <unordered_map>
-#include <map>
 #include <span>
 
 namespace cCodeGen{
 	struct typeHasher{
 		size_t operator()(const ast::type& p) const{
-       			return std::hash<std::string>{}(p.toString());
+       			return p.hash();
 		}
 	};
 	struct cTypeInfo{
