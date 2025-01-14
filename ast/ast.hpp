@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <list>
 #include <variant>
 #include <optional>
 
@@ -34,8 +35,8 @@ namespace ast{
 		function instantiate(const std::vector<ast::type>& replacementTypes) const;
 	};
 	struct context{
-		std::vector<function> funcs;
-		std::vector<functionTemplate> funcTemplates;
+		std::list<function> funcs;
+		std::list<functionTemplate> funcTemplates;
 		void dump() const;
 	};
 }

@@ -87,7 +87,7 @@ std::optional<std::string> parseGNUldScript(std::string_view filename){
 
 }
 
-bool interpreterv2::interpreter::loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs){
+bool interpreterv2::interpreter::loadExternalFunctions(const std::list<ast::function>& funcs, std::span<const std::string> linkLibs){
 	bool loadFailed = false;
 	for(const auto& str : linkLibs){
 		const auto& objPath = addToLibToPathNeed(str) + str + addExtensionToPathNeed(str);

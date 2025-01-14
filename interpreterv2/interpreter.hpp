@@ -26,6 +26,6 @@ namespace interpreterv2{
 			ffi_cif cif;
 		};
 		std::unordered_map<std::string, funcDetails> funcHandles;
-		bool loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs);
+		bool loadExternalFunctions(const std::list<ast::function>& funcs, std::span<const std::string> linkLibs);
 	};
 }

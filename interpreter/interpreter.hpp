@@ -33,6 +33,6 @@ namespace interpreter{
 		externalFunctionHandler externalHandler;
 	};
 	void handleBulitin(const ast::function& func, const ast::call& call, interpreter& M);
-	std::optional<interpreter::externalFunctionHandler> loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs);
+	std::optional<interpreter::externalFunctionHandler> loadExternalFunctions(const std::list<ast::function>& funcs, std::span<const std::string> linkLibs);
 }
 

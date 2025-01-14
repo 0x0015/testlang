@@ -9,6 +9,15 @@ template<T> void testFunc(){
 	println(3);
 }
 
+template<T> void myPrint(T val){
+	print(42);
+	println(val);
+}
+
+template<T> T getValAndPrint(){
+	myPrint<T>(3);
+}
+
 void main(){
 	println(0);
 	myAliasStruct val;
@@ -25,6 +34,8 @@ void main(){
 	println(1);
 
 	testFunc<int>();
+	myPrint<float>(3.14159);
+	getValAndPrint<int>();
 
 	println(2);
 }

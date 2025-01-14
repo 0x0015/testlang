@@ -72,9 +72,6 @@ struct functionCallMatcher{
 		for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
 			numPossibleMatches++;
 			const auto& matchTry = it->second.get();
-			if(matchTry.args.size() != call.args.size()){
-				continue;
-			}
 			bool argsMatch = true;
 			for(unsigned int i=0;i<matchTry.args.size();i++){
 				if(matchTry.args[i].ty != callArgTypes[i]){
@@ -345,17 +342,18 @@ bool checkFunctionTypeUsesValid(ast::function& func, functionCallMatcher& funcCa
 
 bool checkTypeUsesValid(ast::context& context){
 	functionCallMatcher funcCallMatcher{context};
-	for(auto& func : context.funcs){
+	for(const auto& func : context.funcs){
 		funcCallMatcher.allFunctions.insert({func.name, std::cref(func)});
 	}
-	for(auto& funcTempl : context.funcTemplates){
+	for(const auto& funcTempl : context.funcTemplates){
 		funcCallMatcher.allTemplateFunctions.insert({funcTempl.func.name, std::cref(funcTempl)});
 	}
 
 	bool errored = false;
 	//note as we're adding more functions (as template instantiations come in) this cannot be range based
-	for(unsigned int i=0;i<context.funcs.size();i++){
-		errored = !checkFunctionTypeUsesValid(context.funcs[i], funcCallMatcher) || errored; //note: needs this order otherwise the call is culled as errored is (usually) false
+	//actually can now as to solve this problem (as it comes up later) we moved from vector -> list (as we don't really need random access anyway)
+	for(auto& func : context.funcs){
+		errored = !checkFunctionTypeUsesValid(func, funcCallMatcher) || errored; //note: needs this order otherwise the call is culled as errored is (usually) false
 	}
 
 	return !errored;

@@ -85,7 +85,7 @@ std::optional<std::string> parseGNUldScript(std::string_view filename){
 
 }
 
-std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::loadExternalFunctions(std::span<const ast::function> funcs, std::span<const std::string> linkLibs){
+std::optional<interpreter::interpreter::externalFunctionHandler> interpreter::loadExternalFunctions(const std::list<ast::function>& funcs, std::span<const std::string> linkLibs){
 	interpreter::externalFunctionHandler handler;
 	bool loadFailed = false;
 	for(const auto& str : linkLibs){
