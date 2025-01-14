@@ -28,5 +28,6 @@ namespace ast{
 		using statement = std::variant<declaration, assignment, ifStatement, returnStatement, expr>;
 		std::vector<statement> statements;
 		void dump() const;
+		block clone() const;
 	};
 }

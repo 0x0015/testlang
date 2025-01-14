@@ -11,6 +11,7 @@ struct aliasTemplate{
 	ast::type::alias_type instantiate(const std::vector<ast::type>& replacementTypes) const;
 };
 
+void switchTemplatesForReplacements(ast::type& ty, const std::vector<ast::type>& replacementTypes);
 parseRes<std::vector<ast::type>> parseTemplateArgs(std::span<const mediumToken> tokens);
 parseRes<aliasTemplate> parseAliasTemplate(std::span<const mediumToken> tokens);
 parseRes<ast::functionTemplate> parseFunctionTemplate(std::span<const mediumToken> tokens);

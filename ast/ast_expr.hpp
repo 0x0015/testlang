@@ -19,7 +19,6 @@ namespace ast{
 		std::string name;
 		std::vector<expr> args;
 		std::vector<ast::type> templateArgs;
-		std::optional<std::reference_wrapper<const functionTemplate>> validatedDef = std::nullopt;
 	};
 	struct varName{
 		std::string name;
@@ -33,5 +32,6 @@ namespace ast{
 		expr(const literal& l) : value(l){}
 		expr(const std::string& s) : value(varName{s}){}
 		void dump() const;
+		expr clone() const;
 	};
 }

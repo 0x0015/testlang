@@ -2,6 +2,7 @@
 #include <unordered_map>
 #include <optional>
 #include <list>
+#include "../hashCombine.hpp"
 
 struct multiContextDefinedVars_t{
 private:
@@ -31,26 +32,31 @@ public:
 	}
 };
 
-std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiContextDefinedVars_t& definedVars, const ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
-	if(std::holds_alternative<ast::varName>(expr.value)){
-		auto& varName = std::get<ast::varName>(expr.value);
-		if(definedVars.contains(varName.name)){
-			varName.matchedType = definedVars.at(varName.name);
-			return *varName.matchedType;
-		}else{
-			std::cerr<<"Error: reference to unknown variable \""<<varName.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+//quick forward defs
+struct functionCallMatcher;
+std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiContextDefinedVars_t& definedVars, const ast::function& func, functionCallMatcher& funcCallMatcher);
+
+//one day seperate this into it's own file (with header, etc)
+struct functionCallMatcher{
+	ast::context& context;
+	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> allFunctions;
+	std::unordered_multimap<std::string, std::reference_wrapper<const ast::functionTemplate>> allTemplateFunctions;
+	struct templateInstantiationHasher{
+		size_t operator()(const std::pair<std::string, std::vector<ast::type>>& p) const{
+			std::size_t output = hashing::hashValues(p.first);
+			for(const auto& templateSubTy : p.second)
+				output = hashing::hashValues(output, templateSubTy.hash());
+			return output;
 		}
-	}else if(std::holds_alternative<ast::literal>(expr.value)){
-		auto& literal = std::get<ast::literal>(expr.value);
-		return literal.ty;
-	}else if(std::holds_alternative<ast::call>(expr.value)){
-		auto& call = std::get<ast::call>(expr.value);
+	};
+	std::unordered_map<std::pair<std::string, std::vector<ast::type>>, std::reference_wrapper<const ast::function>, templateInstantiationHasher> templateInstantiations;
+	std::optional<std::reference_wrapper<const ast::function>> matchCall(ast::call& call, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars){
 		const auto& possibleMatches = allFunctions.equal_range(call.name);
 
 		std::vector<ast::type> callArgTypes(call.args.size());
 		bool unableToDetermineArgTypes = false;
 		for(unsigned int i=0;i<call.args.size();i++){
-			auto argType = deriveExprTypeAndFill(call.args[i], definedVars, func, allFunctions);
+			auto argType = deriveExprTypeAndFill(call.args[i], definedVars, parentFunction, *this);
 			if(argType){
 				callArgTypes[i] = *argType;
 			}else{
@@ -91,7 +97,7 @@ std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiConte
 
 		if(!matchingFunc || matchesFound == 0 /*should be equivelent*/){
 			std::cerr<<"Error: no match found for call: ";
-			expr.dump();
+			ast::expr(call).dump();
 			std::cout<<"Candidates ("<<numPossibleMatches<<"): "<<std::endl;
 			for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
 				const auto& possibleMatch = it->second.get();
@@ -102,19 +108,140 @@ std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiConte
 		}
 		if(matchesFound != 1){
 			std::cerr<<"Error: found multiple ("<<matchesFound<<") functions matching call to ";
-			expr.dump();
+			ast::expr(call).dump();
 			return std::nullopt;
 		}
 
-		call.validatedDef = *matchingFunc;
-		return matchingFunc->get().ty;
+		return *matchingFunc;
+	}
+	std::optional<std::reference_wrapper<const ast::function>> matchTemplateCall(ast::templateCall& templCall, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars){
+		const auto& possibleMatches = allTemplateFunctions.equal_range(templCall.name);
+
+		std::vector<ast::type> callArgTypes(templCall.args.size());
+		bool unableToDetermineArgTypes = false;
+		for(unsigned int i=0;i<templCall.args.size();i++){
+			auto argType = deriveExprTypeAndFill(templCall.args[i], definedVars, parentFunction, *this);
+			if(argType){
+				callArgTypes[i] = *argType;
+			}else{
+				unableToDetermineArgTypes = true;
+			}
+		}
+		if(unableToDetermineArgTypes)
+			return std::nullopt;//error somewhere inside the arg type finding
+
+		std::optional<std::reference_wrapper<const ast::functionTemplate>> matchingTemplateFunc;
+		unsigned int matchesFound = 0;
+		unsigned int numPossibleMatches = 0;
+		for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
+			numPossibleMatches++;
+			const auto& matchTry = it->second.get();
+			if(matchTry.func.args.size() != templCall.args.size()){
+				continue;
+			}
+			if(matchTry.numTemplateArgs != templCall.templateArgs.size()){
+				continue;
+			}
+			bool argsMatch = true;
+			for(unsigned int i=0;i<matchTry.func.args.size();i++){
+				const auto& arg = matchTry.func.args[i];
+				ast::type argType;
+				if(std::holds_alternative<ast::type::template_type>(arg.ty.ty)){
+					argType = templCall.templateArgs[std::get<ast::type::template_type>(arg.ty.ty).templateParamNum];
+				}else{
+					argType = arg.ty;
+				}
+				if(argType != callArgTypes[i]){
+					argsMatch = false;
+					break;
+				}
+			}
+			if(!argsMatch)
+				continue;
+	
+			//if you got here, all the args both exist and match
+			matchingTemplateFunc = std::cref(matchTry);
+			matchesFound++;
+		}
+
+		if(numPossibleMatches == 0){
+			std::cerr<<"Error: call to unknown function \""<<templCall.name<<"\""<<std::endl;
+			return std::nullopt;
+		}
+
+		if(!matchingTemplateFunc || matchesFound == 0 /*should be equivelent*/){
+			std::cerr<<"Error: no match found for call: ";
+			ast::expr(templCall).dump();
+			std::cout<<"Candidates ("<<numPossibleMatches<<"): "<<std::endl;
+			for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
+				const auto& possibleMatch = it->second.get();
+				std::cout<<"\t";
+				possibleMatch.func.dump();
+			}
+			return std::nullopt;
+		}
+		if(matchesFound != 1){
+			std::cerr<<"Error: found multiple ("<<matchesFound<<") functions matching call to ";
+			ast::expr(templCall).dump();
+			return std::nullopt;
+		}
+
+		//we know what template function is being matched.  Now check if it's been instantiated already (and use that) or instantiate it.
+		const auto& match = matchingTemplateFunc->get();
+		std::pair<std::string, std::vector<ast::type>> instantiationInfo;
+		instantiationInfo.first = match.func.name;
+		instantiationInfo.second = templCall.templateArgs;
+
+		if(templateInstantiations.contains(instantiationInfo)){
+			return std::cref(templateInstantiations.at(instantiationInfo));
+		}else{
+			context.funcs.push_back(match.instantiate(templCall.templateArgs));
+			auto& instantiation = context.funcs.back();
+			templateInstantiations.insert({instantiationInfo, instantiation});
+			return instantiation;
+		}
+	}
+};
+
+std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiContextDefinedVars_t& definedVars, const ast::function& func, functionCallMatcher& funcCallMatcher){
+	if(std::holds_alternative<ast::varName>(expr.value)){
+		auto& varName = std::get<ast::varName>(expr.value);
+		if(definedVars.contains(varName.name)){
+			varName.matchedType = definedVars.at(varName.name);
+			return *varName.matchedType;
+		}else{
+			std::cerr<<"Error: reference to unknown variable \""<<varName.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+			return std::nullopt;
+		}
+	}else if(std::holds_alternative<ast::literal>(expr.value)){
+		auto& literal = std::get<ast::literal>(expr.value);
+		return literal.ty;
+	}else if(std::holds_alternative<ast::call>(expr.value)){
+		auto& call = std::get<ast::call>(expr.value);
+
+		auto tryMatch = funcCallMatcher.matchCall(call, func, definedVars);
+		if(!tryMatch)
+			return std::nullopt;
+
+		call.validatedDef = *tryMatch;
+		return tryMatch->get().ty;
+	}else if(std::holds_alternative<ast::templateCall>(expr.value)){
+		auto& templCall = std::get<ast::templateCall>(expr.value);
+
+		auto tryMatch = funcCallMatcher.matchTemplateCall(templCall, func, definedVars);
+		if(!tryMatch)
+			return std::nullopt;
+
+		ast::call instantiationCall{templCall.name, templCall.args, *tryMatch};
+		expr = instantiationCall;
+		return tryMatch->get().ty;
 	}
 
 	std::cerr<<"Error: expr of unknown type in function \""<<func.name<<"\""<<std::endl;
 	return std::nullopt;
 }
 
-bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t& definedVars_up, const ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
+bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t& definedVars_up, const ast::function& func, functionCallMatcher& funcCallMatcher){
 	std::unordered_map<std::string, ast::type> definedVars_current;
 	multiContextDefinedVars_t definedVars(definedVars_up, definedVars_current);
 	bool errored = false;
@@ -134,7 +261,7 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			}
 		}else if(std::holds_alternative<ast::block::assignment>(statement)){
 			auto& assign = std::get<ast::block::assignment>(statement);
-			const auto& assignFromType = deriveExprTypeAndFill(assign.assignFrom, definedVars, func, allFunctions);
+			const auto& assignFromType = deriveExprTypeAndFill(assign.assignFrom, definedVars, func, funcCallMatcher);
 			if(!assignFromType){
 				errored = true;
 				continue;
@@ -152,14 +279,14 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			}
 		}else if(std::holds_alternative<ast::expr>(statement)){
 			auto& expr = std::get<ast::expr>(statement);
-			const auto& exprType = deriveExprTypeAndFill(expr, definedVars, func, allFunctions);
+			const auto& exprType = deriveExprTypeAndFill(expr, definedVars, func, funcCallMatcher);
 			if(!exprType){
 				errored = true;
 				continue;
 			}
 		}else if(std::holds_alternative<ast::block::ifStatement>(statement)){
 			auto& ifStatement = std::get<ast::block::ifStatement>(statement);
-			const auto& condExprType = deriveExprTypeAndFill(ifStatement.condition, definedVars, func, allFunctions);
+			const auto& condExprType = deriveExprTypeAndFill(ifStatement.condition, definedVars, func, funcCallMatcher);
 			if(!condExprType){
 				errored = true;
 				continue;
@@ -169,15 +296,15 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				errored = true;
 				continue;
 			}
-			if(!checkBlockTypeUsesValid(*ifStatement.ifBody, definedVars, func, allFunctions)){
+			if(!checkBlockTypeUsesValid(*ifStatement.ifBody, definedVars, func, funcCallMatcher)){
 				errored = true;
 			}
-			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, allFunctions)){
+			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, funcCallMatcher)){
 				errored = true;
 			}
 		}else if(std::holds_alternative<ast::block::returnStatement>(statement)){
 			auto& retStatement = std::get<ast::block::returnStatement>(statement);
-			const auto& retValType = deriveExprTypeAndFill(retStatement.val, definedVars, func, allFunctions);
+			const auto& retValType = deriveExprTypeAndFill(retStatement.val, definedVars, func, funcCallMatcher);
 			if(!retValType){
 				errored = true;
 				continue;
@@ -197,7 +324,7 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 	return !errored;
 }
 
-bool checkFunctionTypeUsesValid(ast::function& func, const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& allFunctions){
+bool checkFunctionTypeUsesValid(ast::function& func, functionCallMatcher& funcCallMatcher){
 	bool errored = false;
 	//add arguments as vars
 	std::unordered_map<std::string, ast::type> definedVars_current;
@@ -210,22 +337,27 @@ bool checkFunctionTypeUsesValid(ast::function& func, const std::unordered_multim
 		}
 	}
 
-	if(!checkBlockTypeUsesValid(func.body, definedVars_current, func, allFunctions))
+	if(!checkBlockTypeUsesValid(func.body, definedVars_current, func, funcCallMatcher))
 		errored = true;
 
 	return !errored;
 }
 
 bool checkTypeUsesValid(ast::context& context){
-	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> allFunctions;
+	functionCallMatcher funcCallMatcher{context};
 	for(auto& func : context.funcs){
-		allFunctions.insert({func.name, std::cref(func)});
+		funcCallMatcher.allFunctions.insert({func.name, std::cref(func)});
+	}
+	for(auto& funcTempl : context.funcTemplates){
+		funcCallMatcher.allTemplateFunctions.insert({funcTempl.func.name, std::cref(funcTempl)});
 	}
 
 	bool errored = false;
-	for(auto& func : context.funcs){
-		errored = !checkFunctionTypeUsesValid(func, allFunctions) || errored; //note: needs this order otherwise the call is culled as errored is (usually) false
+	//note as we're adding more functions (as template instantiations come in) this cannot be range based
+	for(unsigned int i=0;i<context.funcs.size();i++){
+		errored = !checkFunctionTypeUsesValid(context.funcs[i], funcCallMatcher) || errored; //note: needs this order otherwise the call is culled as errored is (usually) false
 	}
+
 	return !errored;
 }
 
