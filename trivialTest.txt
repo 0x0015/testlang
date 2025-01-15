@@ -1,0 +1,7 @@
+//really a simplest possible trivial test case
+
+void main(){
+	int variable;
+	variable = 42;
+	println(variable);
+}

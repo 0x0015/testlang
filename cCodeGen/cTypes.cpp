@@ -88,7 +88,7 @@ cCodeGen::cTypeInfo genCTypeInfo(const ast::type& ty, typeStructTable& tst){
 			std::string structDef = "{\n";
 			for(unsigned int i=0;i<tupleTy.size();i++){
 				auto subTypeInfo = genCTypeInfo(tupleTy[i], tst);
-				structDef += subTypeInfo.cName + " val" + std::to_string(i) + ";\n";
+				structDef += "\t" + subTypeInfo.cName + " val" + std::to_string(i) + ";\n";
 			}
 			structDef += "};";
 			std::string structName = "cCodeGen_tupleStructDef_" + std::to_string(tst.entries.size());

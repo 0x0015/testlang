@@ -40,10 +40,13 @@ int main(int argc, char** argv){
 	if(args->oldInterpreter){
 		//old is faster but less featured (may catch up slowly)
 		interpreter::interpret(*parseRes, "main", args->links);
-	}else{
+	}else if(args->interpreter){
 		//new is slower, but should be more fleshed out
 		interpreterv2::interpret(*parseRes, "main", args->links);
+	}else{
+		auto code = cCodeGen::genCCode(*parseRes, "main");
+		std::cout<<code<<std::endl;
 	}
 
-	cCodeGen::genCCode(*parseRes, "main");
+	return 0;
 }

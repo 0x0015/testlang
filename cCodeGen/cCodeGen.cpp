@@ -1,5 +1,6 @@
 #include "cCodeGen.hpp"
 #include <cstring>
+#include "../hashCombine.hpp"
 
 std::string cCodeGen::genCCode(const ast::context& context, const std::string_view entryPoint, bool autoBuild, std::span<const std::string> linkLibs){
 	std::optional<std::reference_wrapper<const ast::function>> entry;
@@ -14,14 +15,17 @@ std::string cCodeGen::genCCode(const ast::context& context, const std::string_vi
 		return "";
 	}
 
-	std::string code;
+	std::string code = "#include <stdio.h>\n\n";
 	auto types = findUsedTypes(*entry);
+	auto funcs = findUsedFunctions(*entry);
 	code += genUsedCTypes(types);
+	code += genBuiltins();
+	code += genUsedFunctionForwarddefs(funcs, types);
+	code += genUsedFunctionDefs(funcs, types);
 
-	//then generate function forward defs
-	//and finally generate the actual function definitons themselves
+	//quick main stub
+	code += "int main(int argc, char** argv){\n\t" + mangleFuncName(entry->get()) + "();\n\treturn(0);\n}\n";
 	
-	std::cout<<code<<std::endl;
 	return code;
 }
 
@@ -51,3 +55,15 @@ std::unordered_map<std::string, std::reference_wrapper<const ast::function>> cCo
 	return output;
 }
 
+std::string cCodeGen::mangleName(const std::string& name){
+	return "cCodeGen_" + name.substr(0, 5) + std::to_string(hashing::hashValues(name));//for now just do this;
+	       //later check for forbidden characters (eg template < & >)
+}
+
+std::string cCodeGen::mangleFuncName(const ast::function& func){
+	std::size_t hash = hashing::hashValues(func.name, func.ty.hash());
+	for(const auto& arg : func.args)
+		hash = hashing::hashValues(hash, arg.ty.hash());
+	return "cCodeGen_" + func.name.substr(0, 5) + std::to_string(hash);//for now just do this;
+	       //later check for forbidden characters (eg template < & >)
+}

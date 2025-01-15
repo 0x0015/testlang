@@ -8,6 +8,7 @@ struct argVals{
 	std::string input;
 	std::vector<std::string> links;
 	static std::optional<argVals> parse(int argc, char** argv);
+	bool interpreter = false;
 	bool oldInterpreter = false;
 };
 

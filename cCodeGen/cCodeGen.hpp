@@ -13,8 +13,15 @@ namespace cCodeGen{
 		std::string cName;
 		int isPointer = 0;
 	};
+	std::string mangleName(const std::string& name);
+	std::string mangleFuncName(const ast::function& func);
 	std::string genCCode(const ast::context& context, const std::string_view entryPoint, bool autoBuild = false, std::span<const std::string> linkLibs = {});
 	std::unordered_map<std::string, std::reference_wrapper<const ast::function>> findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint);
 	std::unordered_map<ast::type, cTypeInfo, typeHasher> findUsedTypes(std::reference_wrapper<const ast::function> entrypoint);
 	std::string genUsedCTypes(std::unordered_map<ast::type, cTypeInfo, typeHasher>& usedTypes);
+
+	std::string genUsedFunctionForwarddefs(const std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types);
+	std::string genUsedFunctionDefs(const std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types);
+
+	std::string genBuiltins();
 }

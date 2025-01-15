@@ -32,7 +32,9 @@ OBJS	= main.cpp.o\
 	  interpreterv2/builtin.cpp.o \
 	  interpreterv2/external.cpp.o \
 	  cCodeGen/cCodeGen.cpp.o \
-	  cCodeGen/cTypes.cpp.o
+	  cCodeGen/cTypes.cpp.o \
+	  cCodeGen/cFunctionGen.cpp.o \
+	  cCodeGen/cBuiltins.cpp.o
 
 
 OUT	= main
