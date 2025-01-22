@@ -1,33 +1,226 @@
 #include "interpreter.hpp"
 #include <cstring>
+#include "../hashCombine.hpp"
+#include <unordered_map>
+#include <tuple>
 
 namespace interpreterv2{
 namespace impl{
-	void print(int val){
+	void print_int(int val){
 		std::cout<<val;
 	}
-	void print(float val){
+	void print_float(float val){
 		std::cout<<val;
 	}
-	void print(bool val){
+	void print_bool(bool val){
 		std::cout<<(val ? "true" : "false");
 	}
 
-	void println(int val){
+	void println_int(int val){
 		std::cout<<val<<std::endl;
 	}
-	void println(float val){
+	void println_float(float val){
 		std::cout<<val<<std::endl;
 	}
-	void println(bool val){
+	void println_bool(bool val){
 		std::cout<<(val ? "true" : "false")<<std::endl;
 	}
+	template<typename T> T add(T val1, T val2){
+		return val1 + val2;
+	}
+	template<typename T> T sub(T val1, T val2){
+		return val1 - val2;
+	}
+	template<typename T> T mul(T val1, T val2){
+		return val1 * val2;
+	}
+	template<typename T> T div(T val1, T val2){
+		return val1 / val2;
+	}
+	int mod(int val1, int val2){
+		return val1 % val2;
+	}
+	template<typename T> bool greater(T val1, T val2){
+		return val1 > val2;
+	}
+	template<typename T> bool less(T val1, T val2){
+		return val1 < val2;
+	}
+	template<typename T> bool greaterOrEqual(T val1, T val2){
+		return val1 >= val2;
+	}
+	template<typename T> bool lessOrEqual(T val1, T val2){
+		return val1 <= val2;
+	}
+	template<typename T> bool equal(T val1, T val2){
+		return val1 == val2;
+	}
+	bool and_bool(bool val1, bool val2){
+		return val1 && val2;
+	}
+	bool or_bool(bool val1, bool val2){
+		return val1 || val2;
+	}
+	bool not_bool(bool val){
+		return !val;
+	}
 }
 }
 
+template<typename Sig>struct signature;
+
+template<typename R, typename ...Args>struct signature<R(Args...)>{
+    using type = std::tuple<Args...>;
+};
+template<typename F> concept is_fun = std::is_function_v<F>;
+template<is_fun F> auto arguments(const F&) -> typename signature<F>::type;
+
+template<int N, typename... Ts> using NthTypeOf = typename std::tuple_element<N, std::tuple<Ts...>>::type;
+
+
+struct builtinFuncDetail{
+	std::string name;
+	ast::type ty;
+	std::vector<ast::type> argTypes;
+};
+bool operator==(const builtinFuncDetail& b1, const builtinFuncDetail& b2){
+	return b1.name == b2.name && b1.ty == b2.ty && b1.argTypes == b2.argTypes;
+}
+struct builtinFuncDetail_hasher{
+	size_t operator()(const builtinFuncDetail& p) const{
+		std::size_t baseHash = hashing::hashValues(p.name, COMPILE_TIME_CRC32_STR("ty"), p.ty.hash(), COMPILE_TIME_CRC32_STR("arg"));
+		for(const auto& argTy : p.argTypes)
+			baseHash = hashing::hashValues(baseHash, argTy.hash());
+		return baseHash;
+	}
+};
+
+struct builtinFuncLibrary{
+	struct funcWrapper_base{
+		virtual std::vector<uint8_t> call(const std::vector<std::vector<uint8_t>>& args) = 0;
+		template<typename T> static const T& convertSimpleArg(const std::vector<uint8_t>& arg){
+			return *((T*)arg.data());
+		}
+		template<typename T> static std::vector<uint8_t> convertSimpleArgBack(const T& arg){
+			std::vector<uint8_t> output(sizeof(T));
+			*((T*)output.data()) = arg;
+			return output;
+		}
+		template <typename... Result, std::size_t... Indices> static auto vec_to_tup_helper(const std::vector<std::vector<uint8_t>>& args, std::index_sequence<Indices...>) {
+		    return std::make_tuple(
+			    convertSimpleArg<NthTypeOf<Indices, Result...>>(args[Indices])...
+		    );
+		}
+		template<typename... Types> struct empty_vpack{
+			empty_vpack(const std::tuple<Types...>& tp){}
+			empty_vpack() = delete;
+		};
+		template <typename ...Result> std::tuple<Result...> vec_to_tup(const std::vector<std::vector<uint8_t>>& args, empty_vpack<Result...>)
+		{
+		    return vec_to_tup_helper<Result...>(args, std::make_index_sequence<sizeof...(Result)>());
+		}
+	};
+	template<is_fun func> struct funcWrapper : public funcWrapper_base{
+		std::conditional_t<std::is_function<func>::value, std::add_pointer_t<func>, func> f;
+		funcWrapper(const func& _f) : f(_f){}
+		using funcArgsTuple = std::conditional_t<std::is_function<func>::value, decltype(arguments(*f)), decltype(arguments(*f))>;
+		std::vector<uint8_t> call(const std::vector<std::vector<uint8_t>>& args){
+			if(std::tuple_size<funcArgsTuple>::value != args.size()){
+				std::cout<<"Error: wrong number of func args for builtin function call!"<<std::endl;
+				return {};
+			}
+			funcArgsTuple argsTuple = vec_to_tup(args, empty_vpack(funcArgsTuple{}));
+			if constexpr(std::is_same_v<decltype(std::apply(f, argsTuple)), void>){
+				std::apply(f, argsTuple);
+				return {};
+			}else{
+				auto res = std::apply(f, argsTuple);
+				return convertSimpleArgBack(res);
+			}
+		}
+	};
+	template<typename F> static std::shared_ptr<funcWrapper_base> wrapFunc(const F& func){
+		return std::make_shared<funcWrapper<F>>(func);
+	}
+	std::unordered_map<builtinFuncDetail, std::shared_ptr<funcWrapper_base>, builtinFuncDetail_hasher> bulitinFuncs;
+	bool containsCall(const ast::call& call) const{
+		builtinFuncDetail funcDetail{call.name, call.validatedDef->get().ty};
+		funcDetail.argTypes.resize(call.args.size());
+		for(unsigned int i=0;i<call.args.size();i++)
+			funcDetail.argTypes[i] = *call.args[i].inferType();
+		return bulitinFuncs.contains(funcDetail);
+	}
+	std::vector<uint8_t> makeCall(const ast::call& call, const std::vector<std::vector<uint8_t>>& args){
+		builtinFuncDetail funcDetail{call.name, call.validatedDef->get().ty};
+		funcDetail.argTypes.resize(call.args.size());
+		for(unsigned int i=0;i<call.args.size();i++)
+			funcDetail.argTypes[i] = *call.args[i].inferType();
+		auto& funcWrapper = bulitinFuncs.at(funcDetail);
+
+		return funcWrapper->call(args);
+	}
+};
+
+builtinFuncLibrary builtinLibrary;
+
+void interpreterv2::interpreter::initializeBuiltinLibrary(){
+	builtinLibrary.bulitinFuncs.clear();//make sure it's empty as to prevent double filling (theoretical)
+	
+	//prints
+	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::println_int);
+	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::println_float);
+	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::println_bool);
+	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::print_int);
+	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::print_float);
+	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::print_bool);
+
+	//arithmatic
+	builtinLibrary.bulitinFuncs[{"add", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::add<int>);
+	builtinLibrary.bulitinFuncs[{"mul", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::mul<int>);
+	builtinLibrary.bulitinFuncs[{"sub", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::sub<int>);
+	builtinLibrary.bulitinFuncs[{"div", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::div<int>);
+	builtinLibrary.bulitinFuncs[{"mod", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::mod);
+
+	builtinLibrary.bulitinFuncs[{"add", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::add<float>);
+	builtinLibrary.bulitinFuncs[{"mul", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::mul<float>);
+	builtinLibrary.bulitinFuncs[{"sub", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::sub<float>);
+	builtinLibrary.bulitinFuncs[{"div", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::div<float>);
+
+	//logic
+	builtinLibrary.bulitinFuncs[{"greater", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::greater<int>);
+	builtinLibrary.bulitinFuncs[{"less", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::less<int>);
+	builtinLibrary.bulitinFuncs[{"greaterOrEqual", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::greaterOrEqual<int>);
+	builtinLibrary.bulitinFuncs[{"lessOrEqual", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::lessOrEqual<int>);
+	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<int>);
+
+	builtinLibrary.bulitinFuncs[{"greater", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::greater<float>);
+	builtinLibrary.bulitinFuncs[{"less", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::less<float>);
+	builtinLibrary.bulitinFuncs[{"greaterOrEqual", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::greaterOrEqual<float>);
+	builtinLibrary.bulitinFuncs[{"lessOrEqual", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::lessOrEqual<float>);
+	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<float>);
+
+	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::bool_type, ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<bool>);
+	builtinLibrary.bulitinFuncs[{"and", ast::type::bool_type, {ast::type::bool_type, ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::and_bool);
+	builtinLibrary.bulitinFuncs[{"or", ast::type::bool_type, {ast::type::bool_type, ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::or_bool);
+	builtinLibrary.bulitinFuncs[{"not", ast::type::bool_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::not_bool);
+}
 
 std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::call& call){
-	const auto& func = call.validatedDef->get();
+	//const auto& func = call.validatedDef->get();
+
+	if(!builtinLibrary.containsCall(call)){
+		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
+		return {};
+	}
+
+	std::vector<std::vector<uint8_t>> callArgs(call.args.size());
+	for(unsigned int i=0;i<callArgs.size();i++){
+		callArgs[i] = interpretExpr(call.args[i]);
+	}
+
+	return builtinLibrary.makeCall(call, callArgs);
+
+	/*
 	const auto functionMatches = [&](const std::string_view name, const std::vector<ast::type> CAT){
 		if(func.name != name)
 			return false;
@@ -39,7 +232,6 @@ std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::ca
 		}
 		return true;
 	};
-
 	const auto getArg = [&]<typename T>(unsigned int argNum) -> T{
 		std::vector<uint8_t> val = interpretExpr(call.args[argNum]);
 		T output;
@@ -50,7 +242,6 @@ std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::ca
 		std::memcpy(&output, val.data(), sizeof(T));
 		return output;
 	};
-
 	if(functionMatches("print", {ast::type::int_type})){
 		impl::print(getArg.operator()<int>(0));
 		return {};
@@ -73,5 +264,6 @@ std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::ca
 		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
 		return {};
 	}
+	*/
 }
 

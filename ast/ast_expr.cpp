@@ -1,5 +1,6 @@
 #include "ast_expr.hpp"
 #include <iostream>
+#include "ast.hpp"
 
 void ast::expr::dump() const{
 	if(std::holds_alternative<literal>(value)){
@@ -62,5 +63,25 @@ ast::expr ast::expr::clone() const{
 	}else{
 		std::cout<<"[Unknown Expression]";
 		return *this;
+	}
+}
+
+std::optional<ast::type> ast::expr::inferType() const{
+	if(std::holds_alternative<literal>(value)){
+		return std::get<literal>(value).ty;
+	}else if(std::holds_alternative<call>(value)){
+		const auto& cll = std::get<call>(value);
+		if(!cll.validatedDef)
+			return std::nullopt;
+		return cll.validatedDef->get().ty;
+	}else if(std::holds_alternative<templateCall>(value)){
+		return std::nullopt;//we have no idea what type a non-instantiated template returns
+	}else if(std::holds_alternative<varName>(value)){
+		const auto& var = std::get<varName>(value);
+		if(!var.matchedType)
+			return std::nullopt;
+		return *var.matchedType;
+	}else{
+		return std::nullopt;
 	}
 }

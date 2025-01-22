@@ -22,6 +22,8 @@ OBJS	= main.cpp.o\
 	  ast/ast_expr.cpp.o \
 	  builtins/builtins.cpp.o \
 	  builtins/prints.cpp.o \
+	  builtins/arithmatic.cpp.o \
+	  builtins/logic.cpp.o \
 	  checks/functionChecker.cpp.o \
 	  checks/typeChecker.cpp.o \
 	  checks/assignmentChecker.cpp.o \

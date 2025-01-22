@@ -43,16 +43,19 @@ bool checkConflictingFunctionDefinitions(const ast::context& context){
 			for(auto it2 = it1; it2 != funcs.second; ++it2){
 				if(it1 == it2)
 					continue;
-				if(it1->second.get().ty != it2->second.get().ty){
-					std::cerr<<"Error: Found functions of same name \""<<funcName<<"\" with defferent return types"<<std::endl;
-					errored = true;
-				}
 				if(it1->second.get().args.size() != it2->second.get().args.size())
 					continue;
 				bool allMatch = true;
 				for(unsigned int i=0;i<it1->second.get().args.size();i++){
 					if(it1->second.get().args[i].ty != it2->second.get().args[i].ty){
 						allMatch = false;
+						break;
+					}
+				}
+				if(allMatch){
+					if(it1->second.get().ty != it2->second.get().ty){
+						std::cerr<<"Error: Found functions with same name \""<<funcName<<"\" and arg types, but differing return types"<<std::endl;
+						errored = true;
 						break;
 					}
 				}

@@ -33,5 +33,6 @@ namespace ast{
 		expr(const std::string& s) : value(varName{s}){}
 		void dump() const;
 		expr clone() const;
+		std::optional<ast::type> inferType() const;
 	};
 }

@@ -27,5 +27,6 @@ namespace interpreterv2{
 		};
 		std::unordered_map<std::string, funcDetails> funcHandles;
 		bool loadExternalFunctions(const std::list<ast::function>& funcs, std::span<const std::string> linkLibs);
+		void initializeBuiltinLibrary();
 	};
 }

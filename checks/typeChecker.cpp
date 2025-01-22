@@ -271,8 +271,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				}
 			}else{
 				//add a new definition here for the variable
-				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, assign.assignTo});
 				definedVars_current[assign.assignTo] = *assignFromType;
+				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, assign.assignTo});//need's to be inserted last before the loop goes again as the reference is destroyed and then when the loop goes again it's updated to a correct value
 				i++;
 			}
 		}else if(std::holds_alternative<ast::expr>(statement)){

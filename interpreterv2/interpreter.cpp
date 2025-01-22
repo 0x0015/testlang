@@ -15,6 +15,7 @@ bool interpreterv2::interpret(const ast::context& context, const std::string_vie
 	}
 	interpreter M;
 
+	M.initializeBuiltinLibrary();
 	if(!M.loadExternalFunctions(context.funcs, linkLibs))
 		return false;
 	
