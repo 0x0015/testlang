@@ -234,7 +234,8 @@ std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiConte
 		return tryMatch->get().ty;
 	}
 
-	std::cerr<<"Error: expr of unknown type in function \""<<func.name<<"\""<<std::endl;
+	std::cerr<<"Error: expr of unknown type in function \""<<func.name<<"\": "<<std::endl;
+	expr.dump();//may crash if the memory is too messed up; but if it does it's entitled to do so
 	return std::nullopt;
 }
 
@@ -298,6 +299,64 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			}
 			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, funcCallMatcher)){
 				errored = true;
+			}
+		}else if(std::holds_alternative<ast::block::forStatement_while>(statement)){
+			auto& whileStatement = std::get<ast::block::forStatement_while>(statement);
+			const auto& condExprType = deriveExprTypeAndFill(whileStatement.condition, definedVars, func, funcCallMatcher);
+			if(!condExprType){
+				errored = true;
+				continue;
+			}
+			if(*condExprType != ast::type(ast::type::bool_type)){
+				std::cerr<<"Error: for statement (single argument mode) condition must be a boolean (bool) value rather than "<<condExprType->toString()<<" in function \""<<func.name<<"\""<<std::endl;
+				errored = true;
+				continue;
+			}
+			if(!checkBlockTypeUsesValid(*whileStatement.body, definedVars, func, funcCallMatcher)){
+				errored = true;
+			}
+		}else if(std::holds_alternative<ast::block::forStatement_normal>(statement)){
+			auto& forStatement = std::get<ast::block::forStatement_normal>(statement);
+			const auto& condExprType = deriveExprTypeAndFill(forStatement.breakCond, definedVars, func, funcCallMatcher);
+			if(!condExprType){
+				errored = true;
+				continue;
+			}
+			if(*condExprType != ast::type(ast::type::bool_type)){
+				std::cerr<<"Error: for statement (single argument mode) condition must be a boolean (bool) value rather than "<<condExprType->toString()<<" in function \""<<func.name<<"\""<<std::endl;
+				errored = true;
+				continue;
+			}
+			const auto& perLoopExprType = deriveExprTypeAndFill(forStatement.perloopCond, definedVars, func, funcCallMatcher);
+			if(!perLoopExprType){
+				errored = true;
+				continue;
+			}
+			/*begin copied and pasted from above in the asignment statement code*/
+			const auto& assignFromType = deriveExprTypeAndFill(forStatement.initialDecl.assignFrom, definedVars, func, funcCallMatcher);
+			if(!assignFromType){
+				errored = true;
+				continue;
+			}
+			bool addBlockDefStatement = false;
+			if(definedVars.contains(forStatement.initialDecl.assignTo)){
+				if(definedVars.at(forStatement.initialDecl.assignTo) != *assignFromType){
+					std::cerr<<"Error: assigning variable of type "<<assignFromType->toString()<<" to variable \""<<forStatement.initialDecl.assignTo<<"\" of type "<<definedVars.at(forStatement.initialDecl.assignTo).toString()<<std::endl;
+					errored = true;
+				}
+			}else{
+				//add a new definition here for the variable
+				addBlockDefStatement = true;
+				definedVars_current[forStatement.initialDecl.assignTo] = *assignFromType;
+				i++;
+			}
+			/*end copied section*/
+			if(!checkBlockTypeUsesValid(*forStatement.body, definedVars, func, funcCallMatcher)){
+				errored = true;
+			}
+			if(addBlockDefStatement){
+				//want this to happen last as to not invalidate all of memory
+				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, forStatement.initialDecl.assignTo});
 			}
 		}else if(std::holds_alternative<ast::block::returnStatement>(statement)){
 			auto& retStatement = std::get<ast::block::returnStatement>(statement);

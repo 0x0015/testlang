@@ -1,0 +1,13 @@
+
+void main(){
+	println(0);
+
+	for(true){
+		println(1);
+	}
+
+	//code will never reach here as it is now.  Switch this to above to test it instead
+	for(i=0;true;true){
+		println(2);
+	}
+}

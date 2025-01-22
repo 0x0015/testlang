@@ -22,10 +22,20 @@ namespace ast{
 			std::shared_ptr<block> ifBody;
 			std::shared_ptr<block> elseBody;
 		};
+		struct forStatement_normal{
+			assignment initialDecl;
+			expr breakCond;
+			expr perloopCond;
+			std::shared_ptr<block> body;
+		};
+		struct forStatement_while{
+			expr condition;
+			std::shared_ptr<block> body;
+		};
 		struct returnStatement{
 			expr val;
 		};
-		using statement = std::variant<declaration, assignment, ifStatement, returnStatement, expr>;
+		using statement = std::variant<declaration, assignment, ifStatement, forStatement_normal, forStatement_while, returnStatement, expr>;
 		std::vector<statement> statements;
 		void dump() const;
 		block clone() const;

@@ -121,6 +121,7 @@ parseRes<ast::block::ifStatement> parseIfStatement(std::span<const mediumToken> 
 	tokens = tokens.subspan(1);
 
 	if(tokens.size() < 2 || !(std::holds_alternative<basicToken>(tokens.front().value) && std::get<basicToken>(tokens.front().value).val == "else")){
+		parse_debug_print("parsed if statement in block");
 		return makeParseRes(ast::block::ifStatement{condExpr->val, std::make_shared<ast::block>(ifBlock->val), std::make_shared<ast::block>()}, 3);
 	}
 
@@ -139,8 +140,95 @@ parseRes<ast::block::ifStatement> parseIfStatement(std::span<const mediumToken> 
 	if(!elseBlock)
 		return std::nullopt;
 	outputSize++;
+	parse_debug_print("parsed if else statement in block");
 
 	return makeParseRes(ast::block::ifStatement{condExpr->val, std::make_shared<ast::block>(ifBlock->val), std::make_shared<ast::block>(elseBlock->val)}, 5);
+}
+
+parseRes<ast::block::forStatement_normal> parseForStatement(std::span<const mediumToken> tokens){
+	if(tokens.size() < 3)
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "for")
+		return std::nullopt;
+	unsigned int outputSize = 1;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<mediumToken::tokList>(tokens.front().value).type != mediumToken::tokList::PAREN)
+		return std::nullopt;
+	auto condToks = std::span<const mediumToken>(std::get<mediumToken::tokList>(tokens.front().value).value);
+	outputSize++;
+	tokens = tokens.subspan(1);
+
+	auto initialDecl = parseAssignment(condToks);
+	if(!initialDecl)
+		return std::nullopt;
+	condToks = condToks.subspan(initialDecl->toksConsumed);
+	auto breakCond = parseExpr(condToks);
+	if(!breakCond)
+		return std::nullopt;
+	condToks = condToks.subspan(breakCond->toksConsumed);
+	if(condToks.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(condToks.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(condToks.front().value).val != ";")
+		return std::nullopt;
+	condToks = condToks.subspan(1);
+	auto perloopCond = parseExpr(condToks);
+	if(!perloopCond)
+		return std::nullopt;
+	condToks = condToks.subspan(perloopCond->toksConsumed);
+	if(!condToks.empty())
+		return std::nullopt;
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<mediumToken::tokList>(tokens.front().value).type != mediumToken::tokList::CURL_BRACK)
+		return std::nullopt;
+	auto whileBlock = parseBlock(std::get<mediumToken::tokList>(tokens.front().value).value, false);
+	if(!whileBlock)
+		return std::nullopt;
+	outputSize++;
+
+	parse_debug_print("parsed for loop in block");
+	return makeParseRes(ast::block::forStatement_normal{initialDecl->val, breakCond->val, perloopCond->val, std::make_shared<ast::block>(whileBlock->val)}, 3);
+}
+
+parseRes<ast::block::forStatement_while> parseWhileStatement(std::span<const mediumToken> tokens){
+	if(tokens.size() < 3)
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "for")
+		return std::nullopt;
+	unsigned int outputSize = 1;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<mediumToken::tokList>(tokens.front().value).type != mediumToken::tokList::PAREN)
+		return std::nullopt;
+	auto condExpr = parseExpr(std::get<mediumToken::tokList>(tokens.front().value).value);
+	if(!condExpr)
+		return std::nullopt;
+	outputSize++;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<mediumToken::tokList>(tokens.front().value).type != mediumToken::tokList::CURL_BRACK)
+		return std::nullopt;
+	auto whileBlock = parseBlock(std::get<mediumToken::tokList>(tokens.front().value).value, false);
+	if(!whileBlock)
+		return std::nullopt;
+	outputSize++;
+
+	parse_debug_print("parsed for (while) loop in block");
+	return makeParseRes(ast::block::forStatement_while{condExpr->val, std::make_shared<ast::block>(whileBlock->val)}, 3);
 }
 
 parseRes<ast::block::returnStatement> parseReturnStatement(std::span<const mediumToken> tokens){
@@ -204,6 +292,18 @@ parseRes<std::vector<ast::block::statement>> parseBlock_internal(std::span<const
 		if(ifTry){
 			output.push_back(ifTry->val);
 			tokens = tokens.subspan(ifTry->toksConsumed);
+			continue;
+		}
+		auto forTry = parseForStatement(tokens);
+		if(forTry){
+			output.push_back(forTry->val);
+			tokens = tokens.subspan(forTry->toksConsumed);
+			continue;
+		}
+		auto whileTry = parseWhileStatement(tokens);
+		if(whileTry){
+			output.push_back(whileTry->val);
+			tokens = tokens.subspan(whileTry->toksConsumed);
 			continue;
 		}
 		std::cerr<<"Found structure in code block that did not parse as either variable declaration, variable assignment, or function call"<<std::endl;

@@ -90,6 +90,22 @@ bool interpreterv2::interpreter::interpretStatement(const ast::block::statement&
 		}else{
 			interpretBlock(*ifState.elseBody);
 		}
+	}else if(std::holds_alternative<ast::block::forStatement_while>(state)){
+		const auto& whileState = std::get<ast::block::forStatement_while>(state);
+		bool cond = interpretExpr(whileState.condition).front() != 0;
+		while(cond){
+			interpretBlock(*whileState.body);	
+			cond = interpretExpr(whileState.condition).front() != 0;
+		}
+	}else if(std::holds_alternative<ast::block::forStatement_normal>(state)){
+		const auto& forState = std::get<ast::block::forStatement_normal>(state);
+		varEntries[forState.initialDecl.assignTo] = interpretExpr(forState.initialDecl.assignFrom);
+		bool cond = interpretExpr(forState.breakCond).front() != 0;
+		while(cond){
+			interpretBlock(*forState.body);
+			cond = interpretExpr(forState.breakCond).front() != 0;
+			interpretExpr(forState.perloopCond);
+		}
 	}else if(std::holds_alternative<ast::block::returnStatement>(state)){
 		const auto& ret = std::get<ast::block::returnStatement>(state);
 		returnBuffer = interpretExpr(ret.val);

@@ -24,6 +24,23 @@ void ast::block::dump() const{
 			ifState.ifBody->dump();
 			std::cout<<"\t else ";
 			ifState.elseBody->dump();
+		}else if(std::holds_alternative<forStatement_normal>(state)){
+			const auto& forState = std::get<forStatement_normal>(state);
+			std::cout<<"\tFor statement (normal): for(" + forState.initialDecl.assignTo;
+			std::cout<<" = ";
+			forState.initialDecl.assignFrom.dump();
+			std::cout<<"; ";
+			forState.breakCond.dump();
+			std::cout<<"; ";
+			forState.perloopCond.dump();
+			std::cout<<"\t) ";
+			forState.body->dump();
+		}else if(std::holds_alternative<forStatement_while>(state)){
+			const auto& whileState = std::get<forStatement_while>(state);
+			std::cout<<"\tFor statement (while): for(";
+			whileState.condition.dump();
+			std::cout<<"\t) ";
+			whileState.body->dump();
 		}else if(std::holds_alternative<returnStatement>(state)){
 			const auto& retState = std::get<returnStatement>(state);
 			std::cout<<"\tReturn: ";
@@ -51,6 +68,12 @@ ast::block ast::block::clone() const{
 			ifState.condition = ifState.condition.clone();
 			ifState.ifBody = std::make_shared<ast::block>(ifState.ifBody->clone());
 			ifState.elseBody = std::make_shared<ast::block>(ifState.elseBody->clone());
+		}else if(std::holds_alternative<forStatement_normal>(state)){
+			auto& forState = std::get<forStatement_normal>(state);
+			forState.initialDecl.assignFrom = forState.initialDecl.assignFrom.clone();
+			forState.breakCond = forState.breakCond.clone();
+			forState.perloopCond = forState.perloopCond.clone();
+			forState.body = std::make_shared<ast::block>(forState.body->clone());
 		}else if(std::holds_alternative<returnStatement>(state)){
 			auto& retState = std::get<returnStatement>(state);
 			retState.val = retState.val.clone();
