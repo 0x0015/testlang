@@ -32,7 +32,8 @@ void ast::block::dump() const{
 			std::cout<<"; ";
 			forState.breakCond.dump();
 			std::cout<<"; ";
-			forState.perloopCond.dump();
+			std::cout<<forState.perLoopAsgn.assignTo<< " = ";
+			forState.perLoopAsgn.assignFrom.dump();
 			std::cout<<"\t) ";
 			forState.body->dump();
 		}else if(std::holds_alternative<forStatement_while>(state)){
@@ -72,7 +73,7 @@ ast::block ast::block::clone() const{
 			auto& forState = std::get<forStatement_normal>(state);
 			forState.initialDecl.assignFrom = forState.initialDecl.assignFrom.clone();
 			forState.breakCond = forState.breakCond.clone();
-			forState.perloopCond = forState.perloopCond.clone();
+			forState.perLoopAsgn.assignFrom = forState.perLoopAsgn.assignFrom.clone();
 			forState.body = std::make_shared<ast::block>(forState.body->clone());
 		}else if(std::holds_alternative<returnStatement>(state)){
 			auto& retState = std::get<returnStatement>(state);

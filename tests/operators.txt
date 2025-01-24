@@ -1,0 +1,25 @@
+
+void main(){
+	i=0;
+	println(i);
+	i = i+1;
+	println(i);
+	i = i+2*3;
+	println(i);
+	if(true && false){
+		println(300);
+	}
+	if(false || true){
+		println(400);
+	}
+	if(true && true){
+		println(500);
+	}
+	for(x=0;x<10;x=x+1){
+		if(i == x){
+			println(700);
+		}else{
+			println(x);
+		}
+	}
+}

@@ -36,7 +36,7 @@ parseRes<ast::block::declaration> parseDeclaration(std::span<const mediumToken> 
 	return makeParseRes(ast::block::declaration{tyTry->val, name}, outputSize);
 }
 
-parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> tokens){
+parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> tokens, bool inculdeSemicolin = true /*disableable for reuse in parsing last statement in for loop*/){
 	if(tokens.size() < 4)
 		return std::nullopt;
 
@@ -61,13 +61,15 @@ parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> to
 	tokens = tokens.subspan(asgnFrom->toksConsumed);
 	outputSize += asgnFrom->toksConsumed;
 
-	if(tokens.empty())
-		return std::nullopt;
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	if(std::get<basicToken>(tokens.front().value).val != ";")
-		return std::nullopt;
-	outputSize++;
+	if(inculdeSemicolin){
+		if(tokens.empty())
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		if(std::get<basicToken>(tokens.front().value).val != ";")
+			return std::nullopt;
+		outputSize++;
+	}
 
 	return makeParseRes(ast::block::assignment{asgnTo, asgnFrom->val}, outputSize);
 }
@@ -178,10 +180,10 @@ parseRes<ast::block::forStatement_normal> parseForStatement(std::span<const medi
 	if(std::get<basicToken>(condToks.front().value).val != ";")
 		return std::nullopt;
 	condToks = condToks.subspan(1);
-	auto perloopCond = parseExpr(condToks);
-	if(!perloopCond)
+	auto perloopAsgn = parseAssignment(condToks, false);
+	if(!perloopAsgn)
 		return std::nullopt;
-	condToks = condToks.subspan(perloopCond->toksConsumed);
+	condToks = condToks.subspan(perloopAsgn->toksConsumed);
 	if(!condToks.empty())
 		return std::nullopt;
 
@@ -195,7 +197,7 @@ parseRes<ast::block::forStatement_normal> parseForStatement(std::span<const medi
 	outputSize++;
 
 	parse_debug_print("parsed for loop in block");
-	return makeParseRes(ast::block::forStatement_normal{initialDecl->val, breakCond->val, perloopCond->val, std::make_shared<ast::block>(whileBlock->val)}, 3);
+	return makeParseRes(ast::block::forStatement_normal{initialDecl->val, breakCond->val, perloopAsgn->val, std::make_shared<ast::block>(whileBlock->val)}, 3);
 }
 
 parseRes<ast::block::forStatement_while> parseWhileStatement(std::span<const mediumToken> tokens){

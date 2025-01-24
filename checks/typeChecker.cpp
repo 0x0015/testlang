@@ -246,6 +246,7 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 
 	for(unsigned int i=0;i<block.statements.size();i++){
 		auto& statement = block.statements[i];
+		//declaration
 		if(std::holds_alternative<ast::block::declaration>(statement)){
 			const auto& decl = std::get<ast::block::declaration>(statement);
 			if(definedVars.contains(decl.name)){
@@ -257,6 +258,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			}else{
 				definedVars_current[decl.name] = decl.ty;
 			}
+
+		//assignment
 		}else if(std::holds_alternative<ast::block::assignment>(statement)){
 			auto& assign = std::get<ast::block::assignment>(statement);
 			const auto& assignFromType = deriveExprTypeAndFill(assign.assignFrom, definedVars, func, funcCallMatcher);
@@ -275,6 +278,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, assign.assignTo});//need's to be inserted last before the loop goes again as the reference is destroyed and then when the loop goes again it's updated to a correct value
 				i++;
 			}
+
+		//expr
 		}else if(std::holds_alternative<ast::expr>(statement)){
 			auto& expr = std::get<ast::expr>(statement);
 			const auto& exprType = deriveExprTypeAndFill(expr, definedVars, func, funcCallMatcher);
@@ -282,6 +287,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				errored = true;
 				continue;
 			}
+
+		//if statement
 		}else if(std::holds_alternative<ast::block::ifStatement>(statement)){
 			auto& ifStatement = std::get<ast::block::ifStatement>(statement);
 			const auto& condExprType = deriveExprTypeAndFill(ifStatement.condition, definedVars, func, funcCallMatcher);
@@ -300,6 +307,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			if(!checkBlockTypeUsesValid(*ifStatement.elseBody, definedVars, func, funcCallMatcher)){
 				errored = true;
 			}
+
+		//for statement (while mode)
 		}else if(std::holds_alternative<ast::block::forStatement_while>(statement)){
 			auto& whileStatement = std::get<ast::block::forStatement_while>(statement);
 			const auto& condExprType = deriveExprTypeAndFill(whileStatement.condition, definedVars, func, funcCallMatcher);
@@ -315,23 +324,12 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			if(!checkBlockTypeUsesValid(*whileStatement.body, definedVars, func, funcCallMatcher)){
 				errored = true;
 			}
+
+		//for statement (normal mode)
 		}else if(std::holds_alternative<ast::block::forStatement_normal>(statement)){
+			//TODO: clean this up!  IT IS A MESS.  probably take each of the block statement types and put them each into their own functions
 			auto& forStatement = std::get<ast::block::forStatement_normal>(statement);
-			const auto& condExprType = deriveExprTypeAndFill(forStatement.breakCond, definedVars, func, funcCallMatcher);
-			if(!condExprType){
-				errored = true;
-				continue;
-			}
-			if(*condExprType != ast::type(ast::type::bool_type)){
-				std::cerr<<"Error: for statement (single argument mode) condition must be a boolean (bool) value rather than "<<condExprType->toString()<<" in function \""<<func.name<<"\""<<std::endl;
-				errored = true;
-				continue;
-			}
-			const auto& perLoopExprType = deriveExprTypeAndFill(forStatement.perloopCond, definedVars, func, funcCallMatcher);
-			if(!perLoopExprType){
-				errored = true;
-				continue;
-			}
+
 			/*begin copied and pasted from above in the asignment statement code*/
 			const auto& assignFromType = deriveExprTypeAndFill(forStatement.initialDecl.assignFrom, definedVars, func, funcCallMatcher);
 			if(!assignFromType){
@@ -350,6 +348,34 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				definedVars_current[forStatement.initialDecl.assignTo] = *assignFromType;
 				i++;
 			}
+
+			const auto& condExprType = deriveExprTypeAndFill(forStatement.breakCond, definedVars, func, funcCallMatcher);
+			if(!condExprType){
+				errored = true;
+				continue;
+			}
+			if(*condExprType != ast::type(ast::type::bool_type)){
+				std::cerr<<"Error: for statement (single argument mode) condition must be a boolean (bool) value rather than "<<condExprType->toString()<<" in function \""<<func.name<<"\""<<std::endl;
+				errored = true;
+				continue;
+			}
+
+			const auto& perLoopAsgnType = deriveExprTypeAndFill(forStatement.perLoopAsgn.assignFrom, definedVars, func, funcCallMatcher);
+			if(!perLoopAsgnType){
+				errored = true;
+				continue;
+			}
+			if(definedVars.contains(forStatement.perLoopAsgn.assignTo)){
+				if(definedVars.at(forStatement.perLoopAsgn.assignTo) != *perLoopAsgnType){
+					std::cerr<<"Error: assigning variable of type "<<perLoopAsgnType->toString()<<" to variable \""<<forStatement.initialDecl.assignTo<<"\" of type "<<definedVars.at(forStatement.initialDecl.assignTo).toString()<<std::endl;
+					errored = true;
+				}else{
+					definedVars_current[forStatement.initialDecl.assignTo] = *perLoopAsgnType;
+				}
+			}else{
+				std::cerr<<"Error: cannot declare variable in third operand of for loop"<<std::endl;
+			}
+
 			/*end copied section*/
 			if(!checkBlockTypeUsesValid(*forStatement.body, definedVars, func, funcCallMatcher)){
 				errored = true;
@@ -358,6 +384,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				//want this to happen last as to not invalidate all of memory
 				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, forStatement.initialDecl.assignTo});
 			}
+
+		//return statement
 		}else if(std::holds_alternative<ast::block::returnStatement>(statement)){
 			auto& retStatement = std::get<ast::block::returnStatement>(statement);
 			const auto& retValType = deriveExprTypeAndFill(retStatement.val, definedVars, func, funcCallMatcher);

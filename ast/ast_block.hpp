@@ -25,7 +25,7 @@ namespace ast{
 		struct forStatement_normal{
 			assignment initialDecl;
 			expr breakCond;
-			expr perloopCond;
+			assignment perLoopAsgn;
 			std::shared_ptr<block> body;
 		};
 		struct forStatement_while{

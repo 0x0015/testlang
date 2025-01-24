@@ -122,7 +122,7 @@ std::optional<std::vector<basicToken>> basicTokenizeString(const std::string_vie
 						output.back().file.fileSize = 0;
 					}
 				}
-				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ',', '=', '+', '-', '*', '/', '<', '>'};
+				constexpr char singleCharToks[] = {'(', ')', '{', '}', '[', ']', ';', ',', '=', '+', '-', '*', '/', '%', '<', '>', '!', '^', '&', '|'};
 				if(isInList(contents_val[i], singleCharToks)){
 					if(output.back().val.size() == 0){
 						output.back().val += contents_val[i];
