@@ -16,6 +16,7 @@ template<T> void myPrint(T val){
 
 template<T> T getValAndPrint(){
 	myPrint<T>(3);
+	return(3);
 }
 
 void main(){
@@ -35,7 +36,8 @@ void main(){
 
 	testFunc<int>();
 	myPrint<float>(3.14159);
-	getValAndPrint<int>();
+	a = getValAndPrint<int>();
+	println(a);
 
 	println(2);
 }

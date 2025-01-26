@@ -104,8 +104,8 @@ bool interpreterv2::interpreter::interpretStatement(const ast::block::statement&
 		bool cond = interpretExpr(forState.breakCond).front() != 0;
 		while(cond){
 			interpretBlock(*forState.body);
-			cond = interpretExpr(forState.breakCond).front() != 0;
 			varEntries[forState.perLoopAsgn.assignTo] = interpretExpr(forState.perLoopAsgn.assignFrom);
+			cond = interpretExpr(forState.breakCond).front() != 0;
 		}
 	}else if(std::holds_alternative<ast::block::returnStatement>(state)){
 		const auto& ret = std::get<ast::block::returnStatement>(state);

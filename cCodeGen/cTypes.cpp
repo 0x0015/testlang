@@ -13,24 +13,43 @@ void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::t
 	}else if(std::holds_alternative<ast::varName>(expr.value)){
 		const auto& varName = std::get<ast::varName>(expr.value);
 		foundTypes[*varName.matchedType] = {};
+	}else{
+		std::cerr<<"cCodeGen Error: found unknown expr while searhcing for types"<<std::endl;
 	}
 }
 
-void findUsedTypes_iter(std::reference_wrapper<const ast::function> funcToSearch, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes){
-	for(const auto& state : funcToSearch.get().body.statements){
+void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes){
+	for(const auto& state : block.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
 			findUsedTypes_iter_addExpr(expr, foundTypes);
 		}else if(std::holds_alternative<ast::block::declaration>(state)){
 			const auto& decl = std::get<ast::block::declaration>(state);
 			foundTypes[decl.ty] = {};
+		}else if(std::holds_alternative<ast::block::assignment>(state)){
+			//can be ignored as we're (hopefully) only assigning to variable we've already defined (and thus we already know the type)
+		}else if(std::holds_alternative<ast::block::ifStatement>(state)){
+			const auto& ifStat = std::get<ast::block::ifStatement>(state);
+			findUsedTypes_iter_addExpr(ifStat.condition, foundTypes);
+			findUsedTypes_iter(*ifStat.ifBody, foundTypes);
+			findUsedTypes_iter(*ifStat.elseBody, foundTypes);
+		}else if(std::holds_alternative<ast::block::forStatement_while>(state)){
+			const auto& whileStat = std::get<ast::block::forStatement_while>(state);
+			findUsedTypes_iter_addExpr(whileStat.condition, foundTypes);
+			findUsedTypes_iter(*whileStat.body, foundTypes);
+		}else if(std::holds_alternative<ast::block::forStatement_normal>(state)){
+			const auto& forStat = std::get<ast::block::forStatement_normal>(state);
+			findUsedTypes_iter_addExpr(forStat.breakCond, foundTypes);
+			findUsedTypes_iter(*forStat.body, foundTypes);
+		}else{
+			std::cerr<<"cCodeGen Error: found unknown statement while searching for types in block"<<std::endl;
 		}
 	}
 }
 
 std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher> cCodeGen::findUsedTypes(std::reference_wrapper<const ast::function> entrypoint){
 	std::unordered_map<ast::type, cTypeInfo, cCodeGen::typeHasher> output;
-	findUsedTypes_iter(entrypoint, output);
+	findUsedTypes_iter(entrypoint.get().body, output);
 	return output;
 }
 
@@ -60,11 +79,12 @@ private:
 public:
 	std::unordered_set<ast::type, cCodeGen::typeHasher> knownTypes;
 	std::vector<typeStructTable_entry> entries;//we want the entries to be ordered so that if (int, float) is struct 0, then it is above (in the c file) ((int, float), bool) which contains it.
-	const typeStructTable_entry& find(const ast::type& ty){
+	const typeStructTable_entry& find(const ast::type& ty) const{
 		for(const auto& entry : entries){
 			if(entry.ty == ty)
 				return entry;
 		}
+		std::cerr<<"cCodeGen Error: did not find type ("<<ty.toString()<<") struct def in table (when it was expected to be there)"<<std::endl;
 		return defaultEntry;
 	}
 };
@@ -84,6 +104,7 @@ cCodeGen::cTypeInfo genCTypeInfo(const ast::type& ty, typeStructTable& tst){
 		cCodeGen::cTypeInfo output{};
 		if(tst.knownTypes.contains(ty)){
 			output.cName = tst.find(ty).name;
+			//std::cout<<"looking up type in table: "<<ty.toString()<<std::endl;
 		}else{
 			std::string structDef = "{\n";
 			for(unsigned int i=0;i<tupleTy.size();i++){
@@ -108,8 +129,16 @@ cCodeGen::cTypeInfo genCTypeInfo(const ast::type& ty, typeStructTable& tst){
 				output.isPointer++;
 			}
 			*/
-			return output;
 		}
+		return output;
+	}else if(std::holds_alternative<ast::type::alias_type>(ty.ty)){
+		const auto& alias = std::get<ast::type::alias_type>(ty.ty);
+		const auto& tyInfo = genCTypeInfo(*alias.underlyingType, tst);
+		//std::cout<<"Returning alias: "<<ty.toString()<<" direction to ctype: "<<tyInfo.cName<<std::endl;
+		return tyInfo;
+	}else{
+		std::cerr<<"cCodeGen Error: tried to get C type info of an unknown type: "<<ty.toString()<<std::endl;
+		return {};
 	}
 
 	return {};

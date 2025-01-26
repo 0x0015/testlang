@@ -66,8 +66,9 @@ void switchTemplatesForReplacements(ast::block& block, const std::vector<ast::ty
 }
 
 ast::function ast::functionTemplate::instantiate(const std::vector<ast::type>& replacementTypes) const{
-	std::cout<<"Instantiation stub: "<<func.name<<std::endl;
+	//std::cout<<"Instantiation stub: "<<func.name<<std::endl;
 	auto output = func.clone();
+	switchTemplatesForReplacements(output.ty, replacementTypes);
 	for(auto& arg : output.args){
 		switchTemplatesForReplacements(arg.ty, replacementTypes);
 	}

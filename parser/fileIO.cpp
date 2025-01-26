@@ -18,3 +18,10 @@ std::optional<std::string> readFile(const std::string_view filename, bool suppre
 	return output;
 }
 
+bool writeFile(const std::string_view filename, const std::string_view fileContents){
+	std::ofstream file;
+	file.open(std::string(filename)); //no direct call, so cast to std::string
+	file.write(fileContents.data(), fileContents.size());
+	return true;
+}
+

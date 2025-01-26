@@ -17,6 +17,9 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 			std::cout<<"\t-l{lib} for linking to a library"<<std::endl;
 			std::cout<<"\t-i for the interpreter"<<std::endl;
 			std::cout<<"\t-i_old for the old interpreter"<<std::endl;
+			std::cout<<"\t-o {output filename} to specify the output filename"<<std::endl;
+			std::cout<<"\t-C_dump to print the cCodeGen generated C code and exit"<<std::endl;
+			std::cout<<"\t-C_use_compiler {compiler command} to force use of a given C compiler"<<std::endl;
 			return std::nullopt;
 		};
 		if(arg == "-v" || arg == "--verbose"){
@@ -34,6 +37,30 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 		if(arg == "-i_old"){
 			output.oldInterpreter = true;
 			continue;
+		}
+		if(arg == "-o"){
+			if(i+1<argc){
+				output.outputFn = std::string_view(argv[i+1]);
+				i++;
+				continue;
+			}else{
+				std::cerr<<"Argument error: output argument \"-o\" used with no output file supplied"<<std::endl;
+				return std::nullopt;
+			}
+		}
+		if(arg == "-C_dump"){
+			output.printCCode = true;
+			continue;
+		}
+		if(arg == "-C_use_compiler"){
+			if(i+1<argc){
+				output.forceCCompiler = std::string_view(argv[i+1]);
+				i++;
+				continue;
+			}else{
+				std::cerr<<"Argument error: force C compiler argument \"-C_use_compiler\" used with no compiler supplied"<<std::endl;
+				return std::nullopt;
+			}
 		}
 		if(output.input.empty() && arg.size() > 3 && arg[0] != '-'){
 			output.input = arg;

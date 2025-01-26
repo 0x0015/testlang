@@ -45,7 +45,12 @@ int main(int argc, char** argv){
 		interpreterv2::interpret(*parseRes, "main", args->links);
 	}else{
 		auto code = cCodeGen::genCCode(*parseRes, "main");
-		std::cout<<code<<std::endl;
+		if(args->printCCode){
+			std::cout<<code<<std::endl;
+		}else{
+			std::string outputFilename = args->outputFn.empty() ? "a.out" : args->outputFn;
+			cCodeGen::compileCCode(code, outputFilename, args->links, args->forceCCompiler);
+		}
 	}
 
 	return 0;

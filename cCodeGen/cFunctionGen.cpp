@@ -98,11 +98,24 @@ std::string genBlockDef(const ast::block& block, const std::unordered_map<ast::t
 			const auto& ifStat = std::get<ast::block::ifStatement>(statement);
 			output += "\tif(" + genExprDef(ifStat.condition, types) + ")";
 			output += genBlockDef(*ifStat.ifBody, types) + "else" + genBlockDef(*ifStat.elseBody, types);
+		}else if(std::holds_alternative<ast::block::forStatement_while>(statement)){
+			const auto& whileStat = std::get<ast::block::forStatement_while>(statement);
+			output += "\twhile(" + genExprDef(whileStat.condition, types) + ")";
+			output += genBlockDef(*whileStat.body, types);
+		}else if(std::holds_alternative<ast::block::forStatement_normal>(statement)){
+			const auto& forStat = std::get<ast::block::forStatement_normal>(statement);
+			output += "\tfor(";
+			output += types.at(*forStat.initialDecl.assignFrom.inferType()).cName + " " + cCodeGen::mangleName(forStat.initialDecl.assignTo) + " = " + genExprDef(forStat.initialDecl.assignFrom, types) + ";";
+			output += genExprDef(forStat.breakCond, types) + ";";
+			output += cCodeGen::mangleName(forStat.perLoopAsgn.assignTo) + " = " + genExprDef(forStat.perLoopAsgn.assignFrom, types) + ")";
+			output += genBlockDef(*forStat.body, types);
 		}else if(std::holds_alternative<ast::block::returnStatement>(statement)){
 			const auto& retStat = std::get<ast::block::returnStatement>(statement);
 			output += "return(" + genExprDef(retStat.val, types) + ");\n";
 		}else if(std::holds_alternative<ast::expr>(statement)){
 			output += "\t" + genExprDef(std::get<ast::expr>(statement), types) + ";\n";
+		}else{
+			std::cerr<<"cCodeGen Error: block statement of unknown type!"<<std::endl;
 		}
 	}
 	output += "}";
@@ -110,8 +123,10 @@ std::string genBlockDef(const ast::block& block, const std::unordered_map<ast::t
 }
 
 std::string genFunctionDef(const ast::function& func, const std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& types){
-	if(func.status != ast::function::positionStatus::normal)
+	if(func.status != ast::function::positionStatus::normal){
+		std::cout<<"ignoring function with non-normal status: "<<func.name<<std::endl;
 		return {};
+	}
 	std::string output;
 	output += types.at(func.ty).cName;
 	output += " " + cCodeGen::mangleFuncName(func) + "(";

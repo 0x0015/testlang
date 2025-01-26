@@ -10,5 +10,8 @@ struct argVals{
 	static std::optional<argVals> parse(int argc, char** argv);
 	bool interpreter = false;
 	bool oldInterpreter = false;
+	bool printCCode = false;
+	std::string outputFn;
+	std::string forceCCompiler;
 };
 
