@@ -3,14 +3,14 @@
 #include <string_view>
 #include <optional>
 
-template<class T, class Arr> bool isInList(const T& val, const Arr& arr){
+template<class T, class Arr> constexpr bool isInList(const T& val, const Arr& arr){
 	for(const auto& o : arr)
 		if(o == val)
 			return true;
 	return false;
 }
 
-template<class T, class Arr> std::optional<unsigned int> findInList(const T& val, const Arr& arr){
+template<class T, class Arr> constexpr std::optional<unsigned int> findInList(const T& val, const Arr& arr){
 	unsigned int i=0;
 	for(const auto& o : arr){
 		if(o == val)
