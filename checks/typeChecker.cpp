@@ -207,7 +207,7 @@ std::optional<ast::type> deriveExprTypeAndFill(ast::expr& expr, const multiConte
 			varName.matchedType = definedVars.at(varName.name);
 			return *varName.matchedType;
 		}else{
-			std::cerr<<"Error: reference to unknown variable \""<<varName.name<<"\" in function \""<<func.name<<"\""<<std::endl;
+			std::cerr<<"Error: reference to unknown variable \""<<varName.name<<"\" in expr ";expr.dump();std::cout<<" in function \""<<func.name<<"\""<<std::endl;
 			return std::nullopt;
 		}
 	}else if(std::holds_alternative<ast::literal>(expr.value)){
@@ -331,22 +331,22 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			auto& forStatement = std::get<ast::block::forStatement_normal>(statement);
 
 			/*begin copied and pasted from above in the asignment statement code*/
-			const auto& assignFromType = deriveExprTypeAndFill(forStatement.initialDecl.assignFrom, definedVars, func, funcCallMatcher);
-			if(!assignFromType){
+			const auto& initialDeclType = deriveExprTypeAndFill(forStatement.initialDecl.assignFrom, definedVars, func, funcCallMatcher);
+			if(!initialDeclType){
 				errored = true;
 				continue;
 			}
 			bool addBlockDefStatement = false;
 			if(definedVars.contains(forStatement.initialDecl.assignTo)){
-				if(definedVars.at(forStatement.initialDecl.assignTo) != *assignFromType){
-					std::cerr<<"Error: assigning variable of type "<<assignFromType->toString()<<" to variable \""<<forStatement.initialDecl.assignTo<<"\" of type "<<definedVars.at(forStatement.initialDecl.assignTo).toString()<<std::endl;
+				if(definedVars.at(forStatement.initialDecl.assignTo) != *initialDeclType){
+					std::cerr<<"Error: assigning variable of type "<<initialDeclType->toString()<<" to variable \""<<forStatement.initialDecl.assignTo<<"\" of type "<<definedVars.at(forStatement.initialDecl.assignTo).toString()<<std::endl;
 					errored = true;
+					continue;
 				}
 			}else{
 				//add a new definition here for the variable
 				addBlockDefStatement = true;
-				definedVars_current[forStatement.initialDecl.assignTo] = *assignFromType;
-				i++;
+				definedVars_current[forStatement.initialDecl.assignTo] = *initialDeclType;
 			}
 
 			const auto& condExprType = deriveExprTypeAndFill(forStatement.breakCond, definedVars, func, funcCallMatcher);
@@ -374,6 +374,7 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 				}
 			}else{
 				std::cerr<<"Error: cannot declare variable in third operand of for loop"<<std::endl;
+				errored = true;
 			}
 
 			/*end copied section*/
@@ -382,7 +383,8 @@ bool checkBlockTypeUsesValid(ast::block& block, const multiContextDefinedVars_t&
 			}
 			if(addBlockDefStatement){
 				//want this to happen last as to not invalidate all of memory
-				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*assignFromType, forStatement.initialDecl.assignTo});
+				block.statements.insert(block.statements.begin() + i, ast::block::declaration{*initialDeclType, forStatement.initialDecl.assignTo});
+				i++;
 			}
 
 		//return statement

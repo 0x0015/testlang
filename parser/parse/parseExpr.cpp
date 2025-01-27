@@ -80,50 +80,41 @@ parseRes<ast::templateCall> parseTemplateCall(std::span<const mediumToken> token
 }
 
 parseRes<ast::expr> parseExpr_noOperators(std::span<const mediumToken> tokens){
-	std::optional<ast::expr> output;
-	unsigned int outputToks = 0;
 	//try literal
 	{
 		const auto& literalTry = parseLiteral(tokens);
 		if(literalTry){
-			output = literalTry->val;
-			outputToks += literalTry->toksConsumed;
+			return makeParseRes<ast::expr>(literalTry->val, literalTry->toksConsumed);
 		}
 	}
 
 	//try function template call
-	if(!output){
+	{
 		const auto& callTemplateTry = parseTemplateCall(tokens);
 		if(callTemplateTry){
-			output = callTemplateTry->val;
-			outputToks += callTemplateTry->toksConsumed;
+			return makeParseRes<ast::expr>(callTemplateTry->val, callTemplateTry->toksConsumed);
 		}
 	}
 
 	//try function call
-	if(!output){
+	{
 		const auto& callTry = parseCall(tokens);
 		if(callTry){
-			output = callTry->val;
-			outputToks += callTry->toksConsumed;
+			return makeParseRes<ast::expr>(callTry->val, callTry->toksConsumed);
 		}
 	}
 
 	//try var name
-	if(!output){
+	{
 		if(tokens.empty())
 			return std::nullopt;
 		if(!std::holds_alternative<basicToken>(tokens.front().value))
 			return std::nullopt;
 		const std::string& name = std::get<basicToken>(tokens.front().value).val;
-		output = ast::expr(name);
-		outputToks++;
+		return makeParseRes(ast::expr(name), 1);
 	}
 
-	if(!output)
-		return std::nullopt;
-
-	return makeParseRes(*output, outputToks);
+	return std::nullopt;
 }
 
 //these are listed in order of precedence (so * first, || last)

@@ -1,7 +1,8 @@
 #include "cCodeGen.hpp"
 #include <unordered_set>
 
-void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes){
+void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions);
+void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions){
 	if(std::holds_alternative<ast::literal>(expr.value)){
 		const auto& lit = std::get<ast::literal>(expr.value);
 		foundTypes[lit.ty] = {};
@@ -9,7 +10,11 @@ void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::t
 		const auto& call = std::get<ast::call>(expr.value);
 		foundTypes[call.validatedDef->get().ty] = {};
 		for(const auto& arg : call.args)
-			findUsedTypes_iter_addExpr(arg, foundTypes);
+			findUsedTypes_iter_addExpr(arg, foundTypes, traversedFunctions);
+		if(!traversedFunctions.contains(cCodeGen::mangleFuncName(call.validatedDef->get()))){
+			traversedFunctions.insert(cCodeGen::mangleFuncName(call.validatedDef->get()));
+			findUsedTypes_iter(call.validatedDef->get().body, foundTypes, traversedFunctions);
+		}
 	}else if(std::holds_alternative<ast::varName>(expr.value)){
 		const auto& varName = std::get<ast::varName>(expr.value);
 		foundTypes[*varName.matchedType] = {};
@@ -18,11 +23,11 @@ void findUsedTypes_iter_addExpr(const ast::expr& expr, std::unordered_map<ast::t
 	}
 }
 
-void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes){
+void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions){
 	for(const auto& state : block.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
-			findUsedTypes_iter_addExpr(expr, foundTypes);
+			findUsedTypes_iter_addExpr(expr, foundTypes, traversedFunctions);
 		}else if(std::holds_alternative<ast::block::declaration>(state)){
 			const auto& decl = std::get<ast::block::declaration>(state);
 			foundTypes[decl.ty] = {};
@@ -30,17 +35,17 @@ void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, c
 			//can be ignored as we're (hopefully) only assigning to variable we've already defined (and thus we already know the type)
 		}else if(std::holds_alternative<ast::block::ifStatement>(state)){
 			const auto& ifStat = std::get<ast::block::ifStatement>(state);
-			findUsedTypes_iter_addExpr(ifStat.condition, foundTypes);
-			findUsedTypes_iter(*ifStat.ifBody, foundTypes);
-			findUsedTypes_iter(*ifStat.elseBody, foundTypes);
+			findUsedTypes_iter_addExpr(ifStat.condition, foundTypes, traversedFunctions);
+			findUsedTypes_iter(*ifStat.ifBody, foundTypes, traversedFunctions);
+			findUsedTypes_iter(*ifStat.elseBody, foundTypes, traversedFunctions);
 		}else if(std::holds_alternative<ast::block::forStatement_while>(state)){
 			const auto& whileStat = std::get<ast::block::forStatement_while>(state);
-			findUsedTypes_iter_addExpr(whileStat.condition, foundTypes);
-			findUsedTypes_iter(*whileStat.body, foundTypes);
+			findUsedTypes_iter_addExpr(whileStat.condition, foundTypes, traversedFunctions);
+			findUsedTypes_iter(*whileStat.body, foundTypes, traversedFunctions);
 		}else if(std::holds_alternative<ast::block::forStatement_normal>(state)){
 			const auto& forStat = std::get<ast::block::forStatement_normal>(state);
-			findUsedTypes_iter_addExpr(forStat.breakCond, foundTypes);
-			findUsedTypes_iter(*forStat.body, foundTypes);
+			findUsedTypes_iter_addExpr(forStat.breakCond, foundTypes, traversedFunctions);
+			findUsedTypes_iter(*forStat.body, foundTypes, traversedFunctions);
 		}else{
 			std::cerr<<"cCodeGen Error: found unknown statement while searching for types in block"<<std::endl;
 		}
@@ -49,7 +54,9 @@ void findUsedTypes_iter(const ast::block& block, std::unordered_map<ast::type, c
 
 std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher> cCodeGen::findUsedTypes(std::reference_wrapper<const ast::function> entrypoint){
 	std::unordered_map<ast::type, cTypeInfo, cCodeGen::typeHasher> output;
-	findUsedTypes_iter(entrypoint.get().body, output);
+	std::unordered_set<std::string> traversedFunctions;
+	traversedFunctions.insert(mangleFuncName(entrypoint.get()));
+	findUsedTypes_iter(entrypoint.get().body, output, traversedFunctions);
 	return output;
 }
 

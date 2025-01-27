@@ -3,7 +3,11 @@
 std::string genUsedFunctionForwarddef(const ast::function& func, const std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& types){
 	std::string output;
 	output += types.at(func.ty).cName;
-	output += " " + cCodeGen::mangleName(func.name) + "(";
+	if(func.status == ast::function::positionStatus::normal || func.status == ast::function::positionStatus::builtin){
+		output += " " + cCodeGen::mangleFuncName(func) + "(";
+	}else if(func.status == ast::function::positionStatus::external){
+		output += " " + func.name + "(";
+	}
 
 	for(unsigned int i=0;i<func.args.size();i++){
 		output += types.at(func.args[i].ty).cName + " " + cCodeGen::mangleName(func.args[i].name);
@@ -11,10 +15,13 @@ std::string genUsedFunctionForwarddef(const ast::function& func, const std::unor
 			output += ", ";
 	}
 	output += ");";
+	if(func.status == ast::function::positionStatus::external){
+		output += "\n#define " + cCodeGen::mangleFuncName(func) + " " + func.name;
+	}
 	return output;
 }
 
-std::string cCodeGen::genUsedFunctionForwarddefs(const std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+std::string cCodeGen::genUsedFunctionForwarddefs(const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
 	std::string output;
 	for(const auto& [name, func] : funcs){
 		output += genUsedFunctionForwarddef(func.get(), types);
@@ -124,7 +131,8 @@ std::string genBlockDef(const ast::block& block, const std::unordered_map<ast::t
 
 std::string genFunctionDef(const ast::function& func, const std::unordered_map<ast::type, cCodeGen::cTypeInfo, cCodeGen::typeHasher>& types){
 	if(func.status != ast::function::positionStatus::normal){
-		std::cout<<"ignoring function with non-normal status: "<<func.name<<std::endl;
+		//std::cout<<"ignoring function with non-normal status: "<<func.name<<std::endl;
+		//no need to warn, as this is expected (as builtin and external functions should well not have a body generated for them)
 		return {};
 	}
 	std::string output;
@@ -141,7 +149,7 @@ std::string genFunctionDef(const ast::function& func, const std::unordered_map<a
 	return output;
 }
 
-std::string cCodeGen::genUsedFunctionDefs(const std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+std::string cCodeGen::genUsedFunctionDefs(const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
 	std::string output;
 	for(const auto& [name, func] : funcs){
 		output += genFunctionDef(func.get(), types);

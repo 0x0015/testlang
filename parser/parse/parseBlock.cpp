@@ -109,6 +109,8 @@ parseRes<ast::block::ifStatement> parseIfStatement(std::span<const mediumToken> 
 	auto condExpr = parseExpr(std::get<mediumToken::tokList>(tokens.front().value).value);
 	if(!condExpr)
 		return std::nullopt;
+	if((int)std::get<mediumToken::tokList>(tokens.front().value).value.size() != condExpr->toksConsumed)
+		return std::nullopt;//if the condition left tokens unused, that is not okay
 	outputSize++;
 	tokens = tokens.subspan(1);
 
@@ -217,6 +219,8 @@ parseRes<ast::block::forStatement_while> parseWhileStatement(std::span<const med
 	auto condExpr = parseExpr(std::get<mediumToken::tokList>(tokens.front().value).value);
 	if(!condExpr)
 		return std::nullopt;
+	if((int)std::get<mediumToken::tokList>(tokens.front().value).value.size() != condExpr->toksConsumed)
+		return std::nullopt;//if the condition left tokens unused, that is not okay (think while(true and false) "and" wouldn't be recognized so it would be ignored and this would be parsed as while(true) which is disceptive)
 	outputSize++;
 	tokens = tokens.subspan(1);
 

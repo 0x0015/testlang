@@ -77,21 +77,40 @@ bool cCodeGen::compileCCode(const std::string_view code, const std::string_view 
 	return true;
 }
 
-void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& foundFuncs);
+void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs);
 
-void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
+void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
 	if(std::holds_alternative<ast::call>(expr.value)){
 		const auto& call = std::get<ast::call>(expr.value);
 		if(!foundFuncs.contains(call.name)){
 			//foundFuncs.emplace(std::make_pair(call.name, *call.validatedDef));
 			findUsedFunctions_iter(call.validatedDef->get(), foundFuncs);
+		}else{
+			const auto& matches = foundFuncs.equal_range(call.name);
+			bool foundExactMatch = false;
+			for(auto it = matches.first; it != matches.second; ++it){
+				const auto& match = it->second.get();
+				if(match.ty == call.validatedDef->get().ty && match.args.size() == call.validatedDef->get().args.size()){
+					bool argsMatching = true;
+					for(unsigned int i=0;i<match.args.size();i++){
+						if(match.args[i].ty != call.validatedDef->get().args[i].ty){
+							argsMatching = false;
+							break;
+						}
+					}
+					if(!argsMatching) //if there is not an exact match
+						foundExactMatch = false;
+				}
+			}
+			if(!foundExactMatch)
+				findUsedFunctions_iter(call.validatedDef->get(), foundFuncs);
 		}
 		for(const auto& arg : call.args)
 			findUsedFunctions_iter_addExpr(arg, foundFuncs);
 	}
 }
 
-void findUsedFunctions_iter(const ast::block& block, std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
+void findUsedFunctions_iter(const ast::block& block, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
 	for(const auto& state : block.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
@@ -121,13 +140,13 @@ void findUsedFunctions_iter(const ast::block& block, std::unordered_map<std::str
 	}
 }
 
-void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_map<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
+void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
 	foundFuncs.emplace(std::make_pair(funcToSearch.name, std::cref(funcToSearch))); //note: need cref to make sure the reference gets passed by address and not copied and then taking the addr of that local value (for some reason)
 	findUsedFunctions_iter(funcToSearch.body, foundFuncs);
 }
 
-std::unordered_map<std::string, std::reference_wrapper<const ast::function>> cCodeGen::findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint){
-	std::unordered_map<std::string, std::reference_wrapper<const ast::function>> output;
+std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> cCodeGen::findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint){
+	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> output;
 	findUsedFunctions_iter(entrypoint, output);
 	return output;
 }
@@ -139,7 +158,7 @@ std::string cCodeGen::mangleName(const std::string& name){
 }
 
 std::string cCodeGen::mangleFuncName(const ast::function& func){
-	std::size_t hash = hashing::hashValues(func.name, func.ty.hash());
+	std::size_t hash = hashing::hashValues(func.name, COMPILE_TIME_CRC32_STR("ret_ty"), func.ty.hash(), COMPILE_TIME_CRC32_STR("args"));
 	for(const auto& arg : func.args)
 		hash = hashing::hashValues(hash, arg.ty.hash());
 	auto output = "cCodeGen_" + func.name.substr(0, 5) + std::to_string(hash);//for now just do this;

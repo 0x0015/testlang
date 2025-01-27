@@ -20,7 +20,7 @@ std::string cCodeGen::genBuiltins(){
 	print_float_func.name = "print";
 	print_float_func.ty = ast::type::builtin_type::void_type;
 	print_float_func.args = {ast::function::argument{ast::type::builtin_type::float_type}};
-	output += "void " + cCodeGen::mangleFuncName(print_float_func) + "(float val){\n\tprintf(\"%f\", val);\n}\n";
+	output += "void " + cCodeGen::mangleFuncName(print_float_func) + "(float val){\n\tprintf(\"%g\", val);\n}\n";
 
 	ast::function println_int_func;
 	println_int_func.name = "println";
@@ -38,7 +38,7 @@ std::string cCodeGen::genBuiltins(){
 	println_float_func.name = "println";
 	println_float_func.ty = ast::type::builtin_type::void_type;
 	println_float_func.args = {ast::function::argument{ast::type::builtin_type::float_type}};
-	output += "void " + cCodeGen::mangleFuncName(println_float_func) + "(float val){\n\tprintf(\"%f\\n\", val);\n}\n";
+	output += "void " + cCodeGen::mangleFuncName(println_float_func) + "(float val){\n\tprintf(\"%g\\n\", val);\n}\n";
 
 	//arithmatic
 	ast::function add_int_func;

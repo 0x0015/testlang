@@ -150,7 +150,7 @@ bool interpreterv2::interpreter::loadExternalFunctions(const std::list<ast::func
 }
 
 std::vector<uint8_t> interpreterv2::interpreter::handleExternalCall(const ast::call& call){
-	std::cout<<"Handling external functin!"<<std::endl;
+	//std::cout<<"Handling external functin!"<<std::endl;
 	
 	const auto& func = call.validatedDef->get();
 
