@@ -39,5 +39,7 @@ void main(){
 	a = getValAndPrint<int>();
 	println(a);
 
+	myPrint(2.71);
+
 	println(2);
 }

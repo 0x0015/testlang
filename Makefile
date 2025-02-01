@@ -26,6 +26,7 @@ OBJS	= main.cpp.o\
 	  builtins/logic.cpp.o \
 	  checks/functionChecker.cpp.o \
 	  checks/typeChecker.cpp.o \
+	  checks/functionCallMatcher.cpp.o \
 	  checks/assignmentChecker.cpp.o \
 	  interpreter/interpreter.cpp.o \
 	  interpreter/builtins.cpp.o \

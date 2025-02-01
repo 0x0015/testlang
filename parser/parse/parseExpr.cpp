@@ -269,3 +269,34 @@ parseRes<ast::expr> parseExpr(std::span<const mediumToken> tokens){
 	return makeParseRes(opList.exprs.front(), toksConsumed);
 }
 
+parseRes<std::vector<ast::expr>> parseCommaSeperatedExprList(std::span<const mediumToken> tokens){
+	if(tokens.empty())
+		return makeParseRes(std::vector<ast::expr>(), 0);
+
+	std::vector<ast::expr> output;
+
+	auto firstExpr = parseExpr(tokens);
+	if(!firstExpr)
+		return std::nullopt;
+	output.push_back(firstExpr->val);
+	tokens = tokens.subspan(firstExpr->toksConsumed);
+
+	while(!tokens.empty()){
+		if(tokens.size() < 2)
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		if(std::get<basicToken>(tokens.front().value).val != ",")
+			return std::nullopt;
+		tokens = tokens.subspan(1);
+
+		auto nextExpr = parseExpr(tokens);
+		if(!nextExpr)
+			return std::nullopt;
+		output.push_back(nextExpr->val);
+		tokens = tokens.subspan(nextExpr->toksConsumed);
+	}
+
+	return makeParseRes(output, tokens.size());
+}
+

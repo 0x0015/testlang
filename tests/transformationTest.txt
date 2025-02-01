@@ -1,0 +1,17 @@
+
+int myTransformation(int i, int j, int k){
+	return(i+j+k);
+}
+
+void main(){
+	i = 0;
+	println(i);
+	i add = 1;
+	println(i);
+	i *= 3;
+	println(i);
+	i mul() = 4;
+	println(i);
+	i myTransformation(2) = 2;
+	println(i);
+}

@@ -36,7 +36,7 @@ parseRes<ast::block::declaration> parseDeclaration(std::span<const mediumToken> 
 	return makeParseRes(ast::block::declaration{tyTry->val, name}, outputSize);
 }
 
-parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> tokens, bool inculdeSemicolin = true /*disableable for reuse in parsing last statement in for loop*/){
+parseRes<ast::block::assignment> parseBasicAssignment(std::span<const mediumToken> tokens, bool inculdeSemicolin = true /*disableable for reuse in parsing last statement in for loop*/){
 	if(tokens.size() < 4)
 		return std::nullopt;
 
@@ -72,6 +72,101 @@ parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> to
 	}
 
 	return makeParseRes(ast::block::assignment{asgnTo, asgnFrom->val}, outputSize);
+}
+
+parseRes<ast::block::assignment> parseTransformationAssignment(std::span<const mediumToken> tokens, bool inculdeSemicolin = true /*disableable for reuse in parsing last statement in for loop*/){
+	if(tokens.size() < 4)
+		return std::nullopt;
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const auto& asgnTo = std::get<basicToken>(tokens.front().value).val;
+	int outputSize = 1;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	auto transformFuncName = std::get<basicToken>(tokens.front().value).val;
+	if(transformFuncName.size() == 1){
+		switch(transformFuncName.front()){
+			case '+':
+				transformFuncName = "add";
+				break;
+			case '-':
+				transformFuncName = "sub";
+				break;
+			case '/':
+				transformFuncName = "div";
+				break;
+			case '*':
+				transformFuncName = "mul";
+				break;
+			default:
+				break;
+		}
+	}
+	outputSize++;
+	tokens = tokens.subspan(1);
+
+	parseRes<std::vector<ast::expr>> extraArgs;
+	if(std::holds_alternative<mediumToken::tokList>(tokens.front().value)){
+		//parse other args for the transformation func (eg index for get)
+		const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
+		if(list.type != mediumToken::tokList::PAREN)
+			return std::nullopt;
+		
+		extraArgs = parseCommaSeperatedExprList(list.value);
+		if(!extraArgs)
+			return std::nullopt;
+
+		outputSize++;
+		tokens = tokens.subspan(1);
+	}
+
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	if(std::get<basicToken>(tokens.front().value).val != "=")
+		return std::nullopt;
+	outputSize++;
+	tokens = tokens.subspan(1);
+
+	parse_debug_print("parsed transformation assignment up to =");
+
+	const auto& asgnFrom = parseExpr(tokens);
+	if(!asgnFrom)
+		return std::nullopt;
+	tokens = tokens.subspan(asgnFrom->toksConsumed);
+	outputSize += asgnFrom->toksConsumed;
+
+	if(inculdeSemicolin){
+		if(tokens.empty())
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(tokens.front().value))
+			return std::nullopt;
+		if(std::get<basicToken>(tokens.front().value).val != ";")
+			return std::nullopt;
+		outputSize++;
+	}
+
+	ast::call transformationCall{transformFuncName, {asgnTo, asgnFrom->val}};
+	if(extraArgs){
+		for(const auto& extraArg : extraArgs->val)
+			transformationCall.args.push_back(extraArg);
+	}
+	ast::block::assignment output{asgnTo, transformationCall};
+	return makeParseRes(output, outputSize);
+}
+
+parseRes<ast::block::assignment> parseAssignment(std::span<const mediumToken> tokens, bool inculdeSemicolin = true /*disableable for reuse in parsing last statement in for loop*/){
+	 const auto& basicAssignment = parseBasicAssignment(tokens, inculdeSemicolin);
+	 if(basicAssignment)
+		 return basicAssignment;
+
+	 const auto& transformationAssignment = parseTransformationAssignment(tokens, inculdeSemicolin);
+	 if(transformationAssignment)
+		 return transformationAssignment;
+
+	 return std::nullopt;
 }
 
 parseRes<ast::expr> parseExprStatement(std::span<const mediumToken> tokens){

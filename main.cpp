@@ -26,7 +26,7 @@ int main(int argc, char** argv){
 	bool errored = false;
 	
 	if(!parseRes) errored = true;
-	errored = errored || !checkFunctionsDefined(*parseRes);
+	//errored = errored || !checkFunctionsDefined(*parseRes); //problematic and not needed (as this is checked when types are matched in checkTypeUsesValid)
 	errored = errored || !checkConflictingFunctionDefinitions(*parseRes);
 	errored = errored || !checkTypeUsesValid(*parseRes);
 

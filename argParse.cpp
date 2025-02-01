@@ -69,6 +69,7 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 
 		std::cerr<<"Unknown command line argument: \""<<arg<<"\""<<std::endl;
 		std::cout<<"Exiting."<<std::endl;
+		return std::nullopt;
 	}
 
 	//sanity checks
