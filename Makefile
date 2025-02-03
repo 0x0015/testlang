@@ -24,6 +24,7 @@ OBJS	= main.cpp.o\
 	  builtins/prints.cpp.o \
 	  builtins/arithmatic.cpp.o \
 	  builtins/logic.cpp.o \
+	  builtins/arrayOpFuncs.cpp.o \
 	  checks/functionChecker.cpp.o \
 	  checks/typeChecker.cpp.o \
 	  checks/functionCallMatcher.cpp.o \

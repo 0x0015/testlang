@@ -66,11 +66,19 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 	}
 
 	if(numPossibleMatches == 0){
-		std::cerr<<"Error: call to unknown function \""<<call.name<<"\""<<std::endl;
-		return matchCallTryTemplateFallback(call, callArgTypes, parentFunction, definedVars);
+		const auto& templateTry = matchCallTryTemplateFallback(call, callArgTypes, parentFunction, definedVars);
+		if(!templateTry){
+			std::cerr<<"Error: call to unknown function \""<<call.name<<"\""<<std::endl;
+			return std::nullopt;
+		}
+		return templateTry;
 	}
 
 	if(!matchingFunc || matchesFound == 0 /*should be equivelent*/){
+		const auto& templateTry = matchCallTryTemplateFallback(call, callArgTypes, parentFunction, definedVars);
+		if(templateTry)
+			return templateTry;
+
 		std::cerr<<"Error: no match found for call: ";
 		ast::expr(call).dump();
 		std::cout<<"Candidates ("<<numPossibleMatches<<"): "<<std::endl;
@@ -79,7 +87,7 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 			std::cout<<"\t";
 			possibleMatch.dump();
 		}
-		return matchCallTryTemplateFallback(call, callArgTypes, parentFunction, definedVars);
+		return std::nullopt;
 	}
 	if(matchesFound != 1){
 		std::cerr<<"Error: found multiple ("<<matchesFound<<") functions matching call to ";
@@ -93,7 +101,7 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::matchCallTryTemplateFallback(ast::call& call, const std::vector<ast::type>& callArgTypes, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars){
 	//maybe not the most efficient, but definitely the easiest
 	ast::templateCall templEquiv{call.name, call.args, callArgTypes};
-	auto ret = matchTemplateCall(templEquiv, parentFunction, definedVars);
+	auto ret = matchTemplateCall(templEquiv, parentFunction, definedVars, false);
 	if(ret){
 		//call name; call arg types don't need to be updated
 		call.args = templEquiv.args;
@@ -101,7 +109,7 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 	return ret;
 }
 
-std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::matchTemplateCall(ast::templateCall& templCall, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars){
+std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::matchTemplateCall(ast::templateCall& templCall, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars, bool ShowErrors){
 	const auto& possibleMatches = allTemplateFunctions.equal_range(templCall.name);
 
 	std::vector<ast::type> callArgTypes(templCall.args.size());
@@ -152,12 +160,15 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 	}
 
 	if(numPossibleMatches == 0){
-		std::cerr<<"Error: call to unknown function \""<<templCall.name<<"\""<<std::endl;
+		if(ShowErrors) std::cerr<<"Error: call to unknown template function \""<<templCall.name<<"\""<<std::endl;
 		return std::nullopt;
 	}
 
 	if(!matchingTemplateFunc || matchesFound == 0 /*should be equivelent*/){
-		std::cerr<<"Error: no match found for call: ";
+		if(!ShowErrors){
+			return std::nullopt;
+		}
+		std::cerr<<"Error: no match found for template call: ";
 		ast::expr(templCall).dump();
 		std::cout<<"Candidates ("<<numPossibleMatches<<"): "<<std::endl;
 		for(auto it = possibleMatches.first; it != possibleMatches.second; ++it){
@@ -168,7 +179,9 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 		return std::nullopt;
 	}
 	if(matchesFound != 1){
-		std::cerr<<"Error: found multiple ("<<matchesFound<<") functions matching call to ";
+		if(!ShowErrors)
+			return std::nullopt;
+		std::cerr<<"Error: found multiple ("<<matchesFound<<") template functions matching call to ";
 		ast::expr(templCall).dump();
 		return std::nullopt;
 	}
@@ -182,8 +195,13 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 	if(templateInstantiations.contains(instantiationInfo)){
 		return std::cref(templateInstantiations.at(instantiationInfo));
 	}else{
-		context.funcs.push_back(match.instantiate(templCall.templateArgs));
-		auto& instantiation = context.funcs.back();
+		const auto& instantiation_obj = match.instantiate(templCall.templateArgs);
+		if(instantiation_obj.status == ast::function::positionStatus::builtin){
+			context.builtinFuncTemplateInstantiations.push_back({templCall.name, instantiation_obj});
+		}else{
+			context.funcs.push_back(instantiation_obj);
+		}
+		auto& instantiation = (instantiation_obj.status == ast::function::positionStatus::builtin) ? context.builtinFuncTemplateInstantiations.back().second : context.funcs.back();
 		templateInstantiations.insert({instantiationInfo, instantiation});
 		return instantiation;
 	}

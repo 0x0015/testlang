@@ -37,6 +37,7 @@ namespace ast{
 	struct context{
 		std::list<function> funcs;
 		std::list<functionTemplate> funcTemplates;
+		std::list<std::pair<std::string, function>> builtinFuncTemplateInstantiations;
 		void dump() const;
 	};
 }

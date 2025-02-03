@@ -29,5 +29,5 @@ struct functionCallMatcher{
 	std::unordered_map<std::pair<std::string, std::vector<ast::type>>, std::reference_wrapper<const ast::function>, templateInstantiationHasher> templateInstantiations;
 	std::optional<std::reference_wrapper<const ast::function>> matchCall(ast::call& call, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars);
 	std::optional<std::reference_wrapper<const ast::function>> matchCallTryTemplateFallback(ast::call& call, const std::vector<ast::type>& callArgTypes, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars);
-	std::optional<std::reference_wrapper<const ast::function>> matchTemplateCall(ast::templateCall& templCall, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars);
+	std::optional<std::reference_wrapper<const ast::function>> matchTemplateCall(ast::templateCall& templCall, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars, bool ShowErrors = true);
 };
