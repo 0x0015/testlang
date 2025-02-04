@@ -21,9 +21,9 @@ std::string genUsedFunctionForwarddef(const ast::function& func, const std::unor
 	return output;
 }
 
-std::string cCodeGen::genUsedFunctionForwarddefs(const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+std::string cCodeGen::genUsedFunctionForwarddefs(const std::unordered_set<std::reference_wrapper<const ast::function>, funcSigHasher, funcSigComp>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
 	std::string output;
-	for(const auto& [name, func] : funcs){
+	for(const auto& func : funcs){
 		output += genUsedFunctionForwarddef(func.get(), types);
 		output += '\n';
 	}
@@ -97,7 +97,7 @@ std::string genBlockDef(const ast::block& block, const std::unordered_map<ast::t
 	for(const auto& statement : block.statements){
 		if(std::holds_alternative<ast::block::declaration>(statement)){
 			const auto& decl = std::get<ast::block::declaration>(statement);
-			output += "\t" + types.at(decl.ty).cName + " " + cCodeGen::mangleName(decl.name) + ";\n";
+			output += "\t" + types.at(decl.ty).cName + " " + cCodeGen::mangleName(decl.name) + " = " + cCodeGen::getDefaultTypeValue(decl.ty, types) + ";\n";
 		}else if(std::holds_alternative<ast::block::assignment>(statement)){
 			const auto& asgn = std::get<ast::block::assignment>(statement);
 			output += "\t" + cCodeGen::mangleName(asgn.assignTo) + " = " + genExprDef(asgn.assignFrom, types) + ";\n";
@@ -149,9 +149,9 @@ std::string genFunctionDef(const ast::function& func, const std::unordered_map<a
 	return output;
 }
 
-std::string cCodeGen::genUsedFunctionDefs(const std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+std::string cCodeGen::genUsedFunctionDefs(const std::unordered_set<std::reference_wrapper<const ast::function>, funcSigHasher, funcSigComp>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
 	std::string output;
-	for(const auto& [name, func] : funcs){
+	for(const auto& func : funcs){
 		output += genFunctionDef(func.get(), types);
 		output += '\n';
 	}

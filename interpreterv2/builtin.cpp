@@ -208,7 +208,7 @@ void interpreterv2::interpreter::initializeBuiltinLibrary(){
 std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::call& call){
 	//const auto& func = call.validatedDef->get();
 
-	if(!builtinLibrary.containsCall(call)){
+	if(!(builtinLibrary.containsCall(call) || call.name == ("get") || call.name == ("set"))){
 		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
 		return {};
 	}
@@ -217,8 +217,41 @@ std::vector<uint8_t> interpreterv2::interpreter::handleBuiltinCall(const ast::ca
 	for(unsigned int i=0;i<callArgs.size();i++){
 		callArgs[i] = interpretExpr(call.args[i]);
 	}
+	
+	if(call.name == ("get")){
+		const auto& callTy = call.validatedDef->get().ty;
+		
+		if(!std::holds_alternative<ast::type::array_type>(call.args[0].inferType()->ty)){
+			std::cout<<"Error: call to unknown get function builtin (type is not an array, but"<<callTy.toString()<<")"<<std::endl;
+			return {};
+		}
+		
+		const auto& arrTySize = callTy.getSize();
+		const int& arrIndex = *((int*)callArgs[1].data());
+		std::vector<uint8_t> output(arrTySize);
+		std::memcpy(output.data(), callArgs[0].data()+(arrTySize*arrIndex), arrTySize);
+		//std::cout<<"Getting "<<arrIndex<<"th element of array with size "<<callArgs[0].size()<<" bytes"<<std::endl;
+		return output;
+	}else if(call.name == ("set")){
+		const auto& callTy = call.validatedDef->get().ty;
+		
+		if(!std::holds_alternative<ast::type::array_type>(call.args[0].inferType()->ty)){
+			std::cout<<"Error: call to unknown get function builtin (type is not an array, but "<<callTy.toString()<<")"<<std::endl;
+			return {};
+		}
 
-	return builtinLibrary.makeCall(call, callArgs);
+		//func order: array (0), val (1), index (2)
+		
+		const auto& arrTySize = call.validatedDef->get().args[1].ty.getSize();
+		const int& arrIndex = *((int*)callArgs[2].data());
+		const auto& value = callArgs[1];
+		std::vector<uint8_t> output = callArgs[0];
+		std::memcpy(output.data()+(arrTySize*arrIndex), value.data(), std::min((std::size_t)arrTySize, value.size()));
+		//std::cout<<"Setting "<<arrIndex<<"th element of array with size "<<callArgs[0].size()<<" bytes"<<std::endl;
+		return output;
+	}else
+		return builtinLibrary.makeCall(call, callArgs);
+	
 
 	/*
 	const auto functionMatches = [&](const std::string_view name, const std::vector<ast::type> CAT){

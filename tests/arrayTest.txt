@@ -1,0 +1,25 @@
+
+void main(){
+	int[5] testVar;
+	println(get<int[5], int>(testVar, 0));
+	testVar = set<int[5], int>(testVar, 42, 0);
+	println(get<int[5], int>(testVar, 0));
+	testVar = set(testVar, 52, 0);
+	println(get(testVar, 0));
+
+	testVar set(4) = 7;
+	println(get(testVar, 4));
+
+	testVar[3] = 5;
+	println(testVar[3]);
+
+	
+	for(i=0;i<5;i+=1){
+		testVar[i] = i+4;
+	}
+
+	for(i=0;i<5;i+=1){
+		println(testVar[i]);
+	}
+}
+

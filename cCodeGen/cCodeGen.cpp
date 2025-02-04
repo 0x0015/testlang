@@ -22,6 +22,7 @@ std::string cCodeGen::genCCode(const ast::context& context, const std::string_vi
 	auto funcs = findUsedFunctions(*entry);
 	code += genUsedCTypes(types);
 	code += genBuiltins();
+	code += genTemplateFuncBuiltins(funcs, types);
 	code += genUsedFunctionForwarddefs(funcs, types);
 	code += genUsedFunctionDefs(funcs, types);
 
@@ -77,15 +78,17 @@ bool cCodeGen::compileCCode(const std::string_view code, const std::string_view 
 	return true;
 }
 
-void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs);
+void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp>& foundFuncs);
 
-void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
+void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp>& foundFuncs){
 	if(std::holds_alternative<ast::call>(expr.value)){
 		const auto& call = std::get<ast::call>(expr.value);
-		if(!foundFuncs.contains(call.name)){
+		if(!foundFuncs.contains(call.validatedDef->get())){
+			std::cout<<"adding never found before func ("<<call.name<<"/"<<call.validatedDef->get().name<<") in traversal"<<std::endl;
 			//foundFuncs.emplace(std::make_pair(call.name, *call.validatedDef));
 			findUsedFunctions_iter(call.validatedDef->get(), foundFuncs);
 		}else{
+			/*
 			const auto& matches = foundFuncs.equal_range(call.name);
 			bool foundExactMatch = false;
 			for(auto it = matches.first; it != matches.second; ++it){
@@ -102,15 +105,18 @@ void findUsedFunctions_iter_addExpr(const ast::expr& expr, std::unordered_multim
 						foundExactMatch = false;
 				}
 			}
-			if(!foundExactMatch)
+			
+			if(!foundExactMatch){
 				findUsedFunctions_iter(call.validatedDef->get(), foundFuncs);
+			}
+			*/
 		}
 		for(const auto& arg : call.args)
 			findUsedFunctions_iter_addExpr(arg, foundFuncs);
 	}
 }
 
-void findUsedFunctions_iter(const ast::block& block, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
+void findUsedFunctions_iter(const ast::block& block, std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp>& foundFuncs){
 	for(const auto& state : block.statements){
 		if(std::holds_alternative<ast::expr>(state)){
 			const auto& expr = std::get<ast::expr>(state);
@@ -136,17 +142,23 @@ void findUsedFunctions_iter(const ast::block& block, std::unordered_multimap<std
 		}else if(std::holds_alternative<ast::block::returnStatement>(state)){
 			const auto& retStat = std::get<ast::block::returnStatement>(state);
 			findUsedFunctions_iter_addExpr(retStat.val, foundFuncs);
+		}else{
+			std::cerr<<"cCodeGen function traversal error: encountered block statement of unknown type (index "<<state.index()<<")"<<std::endl;
 		}
 	}
 }
 
-void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>>& foundFuncs){
-	foundFuncs.emplace(std::make_pair(funcToSearch.name, std::cref(funcToSearch))); //note: need cref to make sure the reference gets passed by address and not copied and then taking the addr of that local value (for some reason)
+void findUsedFunctions_iter(const ast::function& funcToSearch, std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp>& foundFuncs){
+	if(foundFuncs.contains(funcToSearch))
+		return;
+	std::cout<<"Traversing function: "<<funcToSearch.name<<std::endl;
+	//foundFuncs.emplace(std::make_pair(funcToSearch.name, std::cref(funcToSearch))); //note: need cref to make sure the reference gets passed by address and not copied and then taking the addr of that local value (for some reason)
+	foundFuncs.emplace(std::cref(funcToSearch));
 	findUsedFunctions_iter(funcToSearch.body, foundFuncs);
 }
 
-std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> cCodeGen::findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint){
-	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> output;
+std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp> cCodeGen::findUsedFunctions(std::reference_wrapper<const ast::function> entrypoint){
+	std::unordered_set<std::reference_wrapper<const ast::function>, cCodeGen::funcSigHasher, cCodeGen::funcSigComp> output;
 	findUsedFunctions_iter(entrypoint, output);
 	return output;
 }

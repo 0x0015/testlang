@@ -165,3 +165,52 @@ std::string cCodeGen::genUsedCTypes(std::unordered_map<ast::type, cTypeInfo, typ
 	return typeStructSection;
 }
 
+std::string cCodeGen::getDefaultTypeValue(const ast::type& ty, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+	if(std::holds_alternative<ast::type::builtin_type>(ty.ty)){
+		const auto& builtin = std::get<ast::type::builtin_type>(ty.ty);
+		switch (builtin){
+			case ast::type::int_type:
+				return "0";
+			case ast::type::float_type:
+				return "0.0f";
+			case ast::type::bool_type:
+				return "((unsigned char)0)";
+			default:
+				std::cerr<<"cCodeGen Error: requested default value of empty/void builtin type"<<std::endl;
+				return "<empty builtin type>";
+		}
+	}else if(std::holds_alternative<ast::type::array_type>(ty.ty)){
+		const auto& array = std::get<ast::type::array_type>(ty.ty);
+		std::string perElementDefVal = getDefaultTypeValue(*array.ty, types);
+		std::string output = "(" + types.at(*array.ty).cName + "[" + std::to_string(array.length) + "]){";
+		output.reserve(perElementDefVal.size()*array.length + array.length*2);
+		for(unsigned int i=0;i<array.length;i++){
+			output += perElementDefVal;
+			if(i+1 < array.length)
+				output += ", ";
+		}
+		output += "}";
+		return output;
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty.ty)){
+		//TODO: very VERY likely needs to be fixed.  Not sure how to though (maybe just include a table of default values at the top of the file?)
+		const auto& tuple = std::get<ast::type::tuple_type>(ty.ty);
+		std::string output = "{";
+		for(unsigned int i=0;i<tuple.size();i++){
+			output += getDefaultTypeValue(tuple[i], types);
+			if(i+1 < tuple.size())
+				output += ", ";
+		}
+		output += "}";
+		return output;
+	}else if(std::holds_alternative<ast::type::alias_type>(ty.ty)){
+		const auto& alias = std::get<ast::type::alias_type>(ty.ty);
+		return getDefaultTypeValue(*alias.underlyingType, types);
+	}else if(std::holds_alternative<ast::type::template_type>(ty.ty)){
+		std::cerr<<"cCodeGen Error: Encountered template type in getDefaultTypeValue.  Should never happen!"<<std::endl;
+		return "<template type>";
+	}else{
+		std::cerr<<"cCodeGen Error: Encountered unknown type in getDefaultTypeValue"<<std::endl;
+		return "<value of unknown type>";
+	}
+}
+

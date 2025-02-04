@@ -1,5 +1,8 @@
 
 int myTransformation(int i, int j, int k){
+	println(i);
+	println(j);
+	println(k);
 	return(i+j+k);
 }
 
@@ -12,6 +15,6 @@ void main(){
 	println(i);
 	i mul() = 4;
 	println(i);
-	i myTransformation(2) = 2;
+	i myTransformation(2) = 3;
 	println(i);
 }

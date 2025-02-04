@@ -83,45 +83,58 @@ parseRes<ast::block::assignment> parseTransformationAssignment(std::span<const m
 	const auto& asgnTo = std::get<basicToken>(tokens.front().value).val;
 	int outputSize = 1;
 	tokens = tokens.subspan(1);
-
-	if(!std::holds_alternative<basicToken>(tokens.front().value))
-		return std::nullopt;
-	auto transformFuncName = std::get<basicToken>(tokens.front().value).val;
-	if(transformFuncName.size() == 1){
-		switch(transformFuncName.front()){
-			case '+':
-				transformFuncName = "add";
-				break;
-			case '-':
-				transformFuncName = "sub";
-				break;
-			case '/':
-				transformFuncName = "div";
-				break;
-			case '*':
-				transformFuncName = "mul";
-				break;
-			default:
-				break;
-		}
-	}
-	outputSize++;
-	tokens = tokens.subspan(1);
-
+	
+	std::string transformFuncName;
 	parseRes<std::vector<ast::expr>> extraArgs;
-	if(std::holds_alternative<mediumToken::tokList>(tokens.front().value)){
-		//parse other args for the transformation func (eg index for get)
-		const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
-		if(list.type != mediumToken::tokList::PAREN)
+	if(std::holds_alternative<basicToken>(tokens.front().value)){
+		transformFuncName = std::get<basicToken>(tokens.front().value).val;
+		if(transformFuncName.size() == 1){
+			switch(transformFuncName.front()){
+				case '+':
+					transformFuncName = "add";
+					break;
+				case '-':
+					transformFuncName = "sub";
+					break;
+				case '/':
+					transformFuncName = "div";
+					break;
+				case '*':
+					transformFuncName = "mul";
+					break;
+				default:
+					break;
+			}
+		}
+		outputSize++;
+		tokens = tokens.subspan(1);
+	
+		if(std::holds_alternative<mediumToken::tokList>(tokens.front().value)){
+			//parse other args for the transformation func (eg index for get)
+			const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
+			if(list.type != mediumToken::tokList::PAREN)
+				return std::nullopt;
+			
+			extraArgs = parseCommaSeperatedExprList(list.value);
+			if(!extraArgs)
+				return std::nullopt;
+	
+			outputSize++;
+			tokens = tokens.subspan(1);
+		}
+	}else if(std::holds_alternative<mediumToken::tokList>(tokens.front().value)){
+		const auto& tokList = std::get<mediumToken::tokList>(tokens.front().value);
+		if(tokList.type != mediumToken::tokList::SQUARE_BRACK)
 			return std::nullopt;
-		
-		extraArgs = parseCommaSeperatedExprList(list.value);
+		transformFuncName = "set";
+		extraArgs = parseCommaSeperatedExprList(tokList.value);
 		if(!extraArgs)
 			return std::nullopt;
 
 		outputSize++;
 		tokens = tokens.subspan(1);
-	}
+	}else
+		return std::nullopt;
 
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;

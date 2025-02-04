@@ -1,6 +1,7 @@
 #include "functionCallMatcher.hpp"
 #include "../hashCombine.hpp"
 #include "typeChecker.hpp"
+#include <set>
 
 
 bool multiContextDefinedVars_t::contains(const std::string& str) const{
@@ -98,10 +99,51 @@ std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::
 	return *matchingFunc;
 }
 
+//from here: https://stackoverflow.com/a/15761097
+namespace uniqueify_impl{
+bool operator<(const ast::type& a, const ast::type& b){
+	return a.toString() < b.toString();
+}
+struct target_less
+{
+    template<class It>
+    bool operator()(It const &a, It const &b) const { return *a < *b; }
+};
+struct target_equal
+{
+    template<class It>
+    bool operator()(It const &a, It const &b) const { return *a == *b; }
+};
+template<class It> It uniquify(It begin, It const end)
+{
+    std::vector<It> v;
+    v.reserve(static_cast<size_t>(std::distance(begin, end)));
+    for (It i = begin; i != end; ++i)
+    { v.push_back(i); }
+    std::stable_sort(v.begin(), v.end(), target_less());
+    v.erase(std::unique(v.begin(), v.end(), target_equal()), v.end());
+    std::sort(v.begin(), v.end());
+    size_t j = 0;
+    for (It i = begin; i != end && j != v.size(); ++i)
+    {
+        if (i == v[j])
+        {
+            using std::iter_swap; iter_swap(i, begin);
+            ++j;
+            ++begin;
+        }
+    }
+    return begin;
+}
+}
+
 std::optional<std::reference_wrapper<const ast::function>> functionCallMatcher::matchCallTryTemplateFallback(ast::call& call, const std::vector<ast::type>& callArgTypes, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars){
 	//maybe not the most efficient, but definitely the easiest
-	ast::templateCall templEquiv{call.name, call.args, callArgTypes};
-	auto ret = matchTemplateCall(templEquiv, parentFunction, definedVars, false);
+	std::vector<ast::type> uniqueTypes = callArgTypes;
+	uniqueTypes.erase(uniqueify_impl::uniquify(uniqueTypes.begin(),uniqueTypes.end()), uniqueTypes.end());
+
+	ast::templateCall templEquiv{call.name, call.args, uniqueTypes};
+	auto ret = matchTemplateCall(templEquiv, parentFunction, definedVars, true);
 	if(ret){
 		//call name; call arg types don't need to be updated
 		call.args = templEquiv.args;

@@ -79,6 +79,42 @@ parseRes<ast::templateCall> parseTemplateCall(std::span<const mediumToken> token
 	return makeParseRes(ast::templateCall{name, callArgs, templateArgs->val}, 2+templateArgs->toksConsumed);
 }
 
+parseRes<ast::call> parseGetCallOp(std::span<const mediumToken> tokens){
+	if(tokens.size() < 2)
+		return std::nullopt;
+	if(!std::holds_alternative<basicToken>(tokens.front().value))
+		return std::nullopt;
+	const std::string& name = std::get<basicToken>(tokens.front().value).val;
+	tokens = tokens.subspan(1);
+
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
+	if(list.type != mediumToken::tokList::SQUARE_BRACK)
+		return std::nullopt;
+	parse_debug_print("found likely get call op expr");
+	std::span<const mediumToken> tList(list.value);
+	std::vector<ast::expr> callArgs{name};
+	while(!tList.empty()){
+		auto argTry = parseExpr(tList);
+		if(!argTry)
+			return std::nullopt;
+		callArgs.push_back(argTry->val);
+		tList = tList.subspan(argTry->toksConsumed);
+		if(!tList.empty()){
+			if(!std::holds_alternative<basicToken>(tList.front().value))
+				return std::nullopt;
+			if(std::get<basicToken>(tList.front().value).val != ",")
+				return std::nullopt;
+			tList = tList.subspan(1);
+		}
+	}
+
+	parse_debug_print("Parsed expr as get call op");
+
+	return makeParseRes(ast::call{"get", callArgs}, 2);
+}
+
 parseRes<ast::expr> parseExpr_noOperators(std::span<const mediumToken> tokens){
 	//try literal
 	{
@@ -101,6 +137,14 @@ parseRes<ast::expr> parseExpr_noOperators(std::span<const mediumToken> tokens){
 		const auto& callTry = parseCall(tokens);
 		if(callTry){
 			return makeParseRes<ast::expr>(callTry->val, callTry->toksConsumed);
+		}
+	}
+
+	//try get call op
+	{
+		const auto& getTry = parseGetCallOp(tokens);
+		if(getTry){
+			return makeParseRes<ast::expr>(getTry->val, getTry->toksConsumed);
 		}
 	}
 

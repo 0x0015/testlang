@@ -118,3 +118,21 @@ std::string cCodeGen::genBuiltins(){
 	return output;
 }
 
+std::string cCodeGen::genTemplateFuncBuiltins(const std::unordered_set<std::reference_wrapper<const ast::function>, funcSigHasher, funcSigComp>& funcs, const std::unordered_map<ast::type, cTypeInfo, typeHasher>& types){
+	std::string output;
+	for(const auto& func_wrap : funcs){
+		const auto& func = func_wrap.get();
+		if(func.name.starts_with("get<")){
+			std::cout<<"found get template builtin! "<<func.name<<std::endl;
+			const auto& arrayItemTy = types.at(func.ty).cName;
+			output += arrayItemTy + " " + cCodeGen::mangleFuncName(func) + "(" + types.at(func.args[0].ty).cName + " arr, " + types.at(func.args[1].ty).cName + " index){\n\treturn(arr[index]);\n}\n";
+		}else if(func.name.starts_with("set<")){
+			std::cout<<"found set template builtin! "<<func.name<<std::endl;
+			const auto& arrayTy = types.at(func.ty).cName;
+			//const auto& arrayItemTy = types.at(*std::get<ast::type::array_type>(func.ty.ty).ty).cName;
+			output += arrayTy + " " + cCodeGen::mangleFuncName(func) + "(" + types.at(func.args[0].ty).cName + " arr, " + types.at(func.args[1].ty).cName + " val, "+ types.at(func.args[2].ty).cName + " index){\n\tarr[index] = val;\n\treturn(arr);\n}\n"; //THIS IS TECHNICALLY NOT CORRECT!  with that being said, we will assume it is for now
+		}
+	}
+	return output;
+}
+
