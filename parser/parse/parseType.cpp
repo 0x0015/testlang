@@ -8,8 +8,8 @@ parseRes<ast::type::builtin_type> parseBuiltinType(std::span<const mediumToken> 
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	const basicToken& bToken = std::get<basicToken>(tokens.front().value);
-	constexpr std::string_view basicTokNames[] = {"void", "int", "float", "bool"};
-	constexpr ast::type::builtin_type basicTokTypes[] = {ast::type::builtin_type::void_type, ast::type::builtin_type::int_type, ast::type::builtin_type::float_type, ast::type::builtin_type::bool_type};
+	constexpr std::string_view basicTokNames[] = {"void", "int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "float32", "float64", "bool"};
+	constexpr ast::type::builtin_type basicTokTypes[] = {ast::type::builtin_type::void_type, ast::type::builtin_type::int8_type, ast::type::builtin_type::int16_type, ast::type::builtin_type::int32_type, ast::type::builtin_type::int64_type, ast::type::builtin_type::uint8_type, ast::type::builtin_type::uint16_type, ast::type::builtin_type::uint32_type, ast::type::builtin_type::uint64_type, ast::type::builtin_type::float32_type, ast::type::builtin_type::float64_type, ast::type::builtin_type::bool_type};
 	auto found = findInList(bToken.val, basicTokNames);
 	if(!found)
 		return std::nullopt;

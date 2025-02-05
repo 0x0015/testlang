@@ -5,7 +5,7 @@
 namespace ast{
 	struct literal{
 		type ty;
-		using builtin_literal = std::variant<int, float, bool>;
+		using builtin_literal = std::variant<int64_t, uint64_t, double, float, bool>;
 		struct array_literal{
 			std::vector<literal> vals;
 		};
@@ -14,8 +14,10 @@ namespace ast{
 		};
 		std::variant<builtin_literal, array_literal, tuple_literal> value;
 		literal() = default;
-		literal(int v) : value(v), ty(type::int_type){}
-		literal(float v) : value(v), ty(type::float_type){}
+		literal(int64_t v) : value(v), ty(type::int64_type){}
+		literal(uint64_t v) : value(v), ty(type::uint64_type){}
+		literal(float v) : value(v), ty(type::float32_type){}
+		literal(double v) : value(v), ty(type::float64_type){}
 		literal(bool v) : value(v), ty(type::bool_type){}
 		literal(const array_literal& v) : value(v){
 			if(v.vals.size() == 0){

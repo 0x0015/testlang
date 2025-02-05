@@ -8,8 +8,16 @@ namespace ast{
 		enum builtin_type{
 			none_type,
 			void_type,
-			int_type,
-			float_type,
+			uint8_type,
+			uint16_type,
+			uint32_type,
+			uint64_type,
+			int8_type,
+			int16_type,
+			int32_type,
+			int64_type,
+			float32_type,
+			float64_type,
 			bool_type
 		};
 		struct array_type{

@@ -23,10 +23,26 @@ std::string ast::type::toString() const{
 		switch(std::get<builtin_type>(ty)){
 			case void_type:
 				return "void";
-			case int_type:
-				return "int";
-			case float_type:
-				return "float";
+			case int8_type:
+				return "int8";
+			case int16_type:
+				return "int16";
+			case int32_type:
+				return "int32";
+			case int64_type:
+				return "int64";
+			case uint8_type:
+				return "uint8";
+			case uint16_type:
+				return "uint16";
+			case uint32_type:
+				return "uint32";
+			case uint64_type:
+				return "uint64";
+			case float32_type:
+				return "float32";
+			case float64_type:
+				return "float64";
 			case bool_type:
 				return "bool";
 			default:
@@ -67,12 +83,22 @@ unsigned int ast::type::getSize() const{
 		switch(std::get<ast::type::builtin_type>(ty)){
 			case ast::type::void_type:
 				return 0;
-			case ast::type::int_type://assuming int32
+			case ast::type::int8_type:
+			case ast::type::uint8_type:
+				return 1;
+			case ast::type::int16_type:
+			case ast::type::uint16_type:
+				return 2;
+			case ast::type::int32_type:
+			case ast::type::uint32_type:
+			case ast::type::float32_type:
+				return 4;
+			case ast::type::int64_type:
+			case ast::type::uint64_type:
+			case ast::type::float64_type:
 				return 4;
 			case ast::type::bool_type:
 				return 1;
-			case ast::type::float_type://assuming float32
-				return 4;
 			default:
 				std::cerr<<"Error: Encountered builtin type of unknown size! (all should be known)"<<std::endl;
 				return 0;
