@@ -64,10 +64,26 @@ cCodeGen::cTypeInfo genCBuiltinTypeInfo(const ast::type::builtin_type& ty){
 	switch(ty){
 		case ast::type::builtin_type::void_type:
 			return cCodeGen::cTypeInfo{"void"};
-		case ast::type::builtin_type::int_type:
-			return cCodeGen::cTypeInfo{"int"};
-		case ast::type::builtin_type::float_type:
+		case ast::type::builtin_type::int8_type:
+			return cCodeGen::cTypeInfo{"int8_t"};
+		case ast::type::builtin_type::int16_type:
+			return cCodeGen::cTypeInfo{"int16_t"};
+		case ast::type::builtin_type::int32_type:
+			return cCodeGen::cTypeInfo{"int32_t"};
+		case ast::type::builtin_type::int64_type:
+			return cCodeGen::cTypeInfo{"int64_t"};
+		case ast::type::builtin_type::uint8_type:
+			return cCodeGen::cTypeInfo{"uint8_t"};
+		case ast::type::builtin_type::uint16_type:
+			return cCodeGen::cTypeInfo{"uint16_t"};
+		case ast::type::builtin_type::uint32_type:
+			return cCodeGen::cTypeInfo{"uint32_t"};
+		case ast::type::builtin_type::uint64_type:
+			return cCodeGen::cTypeInfo{"uint64_t"};
+		case ast::type::builtin_type::float32_type:
 			return cCodeGen::cTypeInfo{"float"};
+		case ast::type::builtin_type::float64_type:
+			return cCodeGen::cTypeInfo{"double"};
 		case ast::type::builtin_type::bool_type:
 			return cCodeGen::cTypeInfo{"unsigned char"};
 		default:
@@ -169,10 +185,26 @@ std::string cCodeGen::getDefaultTypeValue(const ast::type& ty, const std::unorde
 	if(std::holds_alternative<ast::type::builtin_type>(ty.ty)){
 		const auto& builtin = std::get<ast::type::builtin_type>(ty.ty);
 		switch (builtin){
-			case ast::type::int_type:
-				return "0";
-			case ast::type::float_type:
+			case ast::type::int8_type:
+				return "((int8_t)0)";
+			case ast::type::int16_type:
+				return "((int16_t)0)";
+			case ast::type::int32_type:
+				return "((int32_t)0)";
+			case ast::type::int64_type:
+				return "((int64_t)0)";
+			case ast::type::uint8_type:
+				return "((uint8_t)0u)";
+			case ast::type::uint16_type:
+				return "((uint16_t)0u)";
+			case ast::type::uint32_type:
+				return "((uint32_t)0u)";
+			case ast::type::uint64_type:
+				return "((uint64_t)0u)";
+			case ast::type::float32_type:
 				return "0.0f";
+			case ast::type::float64_type:
+				return "0.0";
 			case ast::type::bool_type:
 				return "((unsigned char)0)";
 			default:

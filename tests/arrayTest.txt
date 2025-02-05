@@ -1,24 +1,24 @@
 
 void main(){
-	int[5] testVar;
-	println(get<int[5], int>(testVar, 0));
-	testVar = set<int[5], int>(testVar, 42, 0);
-	println(get<int[5], int>(testVar, 0));
-	testVar = set(testVar, 52, 0);
-	println(get(testVar, 0));
+	int32[5] testVar;
+	println(get<int32[5], int32>(testVar, 0u));
+	testVar = set<int32[5], int32>(testVar, 42, 0u);
+	println(get<int32[5], int32>(testVar, 0u));
+	testVar = set(testVar, 52, 0u);
+	println(get(testVar, 0u));
 
-	testVar set(4) = 7;
-	println(get(testVar, 4));
+	testVar set(4u) = 7;
+	println(get(testVar, 4u));
 
-	testVar[3] = 5;
-	println(testVar[3]);
+	testVar[3u] = 5;
+	println(testVar[3u]);
 
 	
-	for(i=0;i<5;i+=1){
-		testVar[i] = i+4;
+	for(i=0u;i<5u;i+=1u){
+		testVar[i] = 4;
 	}
 
-	for(i=0;i<5;i+=1){
+	for(i=0u;i<5u;i+=1u){
 		println(testVar[i]);
 	}
 }

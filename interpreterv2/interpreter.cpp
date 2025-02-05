@@ -29,25 +29,17 @@ bool interpreterv2::interpret(const ast::context& context, const std::string_vie
 std::vector<uint8_t> getLiteralValue(const ast::literal& lit){
 	if(std::holds_alternative<ast::literal::builtin_literal>(lit.value)){
 		const auto& builtin = std::get<ast::literal::builtin_literal>(lit.value);
-		if(std::holds_alternative<int>(builtin)){
-			int val = std::get<int>(builtin);
-			std::vector<uint8_t> output(sizeof(int));
-			std::memcpy(output.data(), &val, sizeof(int));
-			return output;
-		}else if(std::holds_alternative<float>(builtin)){	
-			float val = std::get<float>(builtin);
-			std::vector<uint8_t> output(sizeof(float));
-			std::memcpy(output.data(), &val, sizeof(float));
-			return output;
-		}else if(std::holds_alternative<bool>(builtin)){
-			bool val = std::get<bool>(builtin);
-			std::vector<uint8_t> output(sizeof(bool));
-			std::memcpy(output.data(), &val, sizeof(bool));
-			return output;
-		}else{
+		if(builtin.valueless_by_exception()){
 			std::cerr<<"Error: got builtin literal with no value"<<std::endl;
 			return {};
 		}
+		const auto& output = std::visit([](const auto& arg){
+			using arg_t = std::decay_t<decltype(arg)>;
+			std::vector<uint8_t> output(sizeof(arg_t));
+			std::memcpy(output.data(), &arg, sizeof(arg_t));
+			return output;
+		}, builtin);
+		return output;	
 	}else if(std::holds_alternative<ast::literal::array_literal>(lit.value)){
 		const auto& array = std::get<ast::literal::array_literal>(lit.value);
 		std::vector<uint8_t> output;

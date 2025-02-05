@@ -10,7 +10,7 @@ void anotherFunction(){
 	println(yetAnother(var));
 }
 
-float yetAnother(int input){
+float yetAnother(int32 input){
 	println(input);
 	println(3.1415);
 	return(2.71);

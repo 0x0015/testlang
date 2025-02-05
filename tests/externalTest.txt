@@ -1,8 +1,8 @@
 
-extern int abs(int x);
+extern int32 abs(int32 x);
 
 void main(){
-	int x;
+	int32 x;
 	x = -3;
 	println(x);
 	println(abs(x));

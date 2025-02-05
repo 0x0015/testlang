@@ -1,35 +1,36 @@
 #include "builtins.hpp"
 
-void addLogic(ast::context& context){
-	ast::function int_greater;
-	int_greater.name = "greater";
-	int_greater.ty = ast::type::bool_type;
-	int_greater.args = {{ast::type::int_type, "val1"}, {ast::type::int_type, "val2"}};
-	int_greater.status = ast::function::positionStatus::builtin;
-	addBuiltin(context, int_greater);
-	int_greater.name = "less";
-	addBuiltin(context, int_greater);
-	int_greater.name = "greaterOrEqual";
-	addBuiltin(context, int_greater);
-	int_greater.name = "lessOrEqual";
-	addBuiltin(context, int_greater);
-	int_greater.name = "equal";
-	addBuiltin(context, int_greater);
+//Greater, Less, Greater/eq, Less/eq, Equal
+void addBasicGLGeLeELogic(const ast::type& ty, ast::context& context){
+	ast::function greater;
+	greater.name = "greater";
+	greater.ty = ast::type::bool_type;
+	greater.args = {{ty, "val1"}, {ty, "val2"}};
+	greater.status = ast::function::positionStatus::builtin;
+	addBuiltin(context, greater);
+	greater.name = "less";
+	addBuiltin(context, greater);
+	greater.name = "greaterOrEqual";
+	addBuiltin(context, greater);
+	greater.name = "lessOrEqual";
+	addBuiltin(context, greater);
+	greater.name = "equal";
+	addBuiltin(context, greater);
+}
 
-	ast::function float_greater;
-	float_greater.name = "greater";
-	float_greater.ty = ast::type::bool_type;
-	float_greater.args = {{ast::type::float_type, "val1"}, {ast::type::float_type, "val2"}};
-	float_greater.status = ast::function::positionStatus::builtin;
-	addBuiltin(context, float_greater);
-	float_greater.name = "less";
-	addBuiltin(context, float_greater);
-	float_greater.name = "greaterOrEqual";
-	addBuiltin(context, float_greater);
-	float_greater.name = "lessOrEqual";
-	addBuiltin(context, float_greater);
-	float_greater.name = "equal";
-	addBuiltin(context, float_greater);
+void addLogic(ast::context& context){
+	addBasicGLGeLeELogic(ast::type::int8_type, context);
+	addBasicGLGeLeELogic(ast::type::int16_type, context);
+	addBasicGLGeLeELogic(ast::type::int32_type, context);
+	addBasicGLGeLeELogic(ast::type::int64_type, context);
+
+	addBasicGLGeLeELogic(ast::type::uint8_type, context);
+	addBasicGLGeLeELogic(ast::type::uint16_type, context);
+	addBasicGLGeLeELogic(ast::type::uint32_type, context);
+	addBasicGLGeLeELogic(ast::type::uint64_type, context);
+
+	addBasicGLGeLeELogic(ast::type::float32_type, context);
+	addBasicGLGeLeELogic(ast::type::float64_type, context);
 
 	ast::function bool_and;
 	bool_and.name = "and";

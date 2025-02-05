@@ -1,27 +1,27 @@
 void empty(){}
-int test (int test6, int test7) {}
+int32 test (int32 test6, int32 test7) {}
 bool test2(){
-	int test;
+	int32 test;
 	print(test);
 }
-float test76(bool myvar7){
-	int myvar8;
+float32 test76(bool myvar7){
+	int32 myvar8;
 	print(myvar7);
-	float myfloat;
+	float32 myfloat;
 	//print(myvar7, myvar8);
 }
 void main(){
-	float test;
+	float32 test;
 	println(test);
 	println(1);
 	println(true);
 	println(-3.14);
-	test = 3.1415;
+	test = 3.1415f;
 	println(test);
-	(float, int) val1;
-	((float, int), bool) val2;
+	(float32, int32) val1;
+	((float32, int32), bool) val2;
 	//() val3; //errors, as it's not a type
-	float[5] val4;
+	float32[5] val4;
 	//float[5] val5; //really I want this syntax.  I just don't know how to get the parser to do it
 	//assign(val4, [3.14, 54.4]);
 	//assign(val1, (3.14, 7));

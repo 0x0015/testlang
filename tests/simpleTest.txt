@@ -1,16 +1,16 @@
 //no'ther comment here
-alias int -> myStruct;
+alias int32 -> myStruct;
 strict alias myStruct -> myStruct2;
 void main(){
 //comment here
-	int myVar; //this is a comment
+	int32 myVar; //this is a comment
 	/*another comment*/
-	float anotherVar;
-	float[5] arrayVar;
-	(float, int) tupleVar;
-	((float, float), int) nestedTupleVar;
-	(float[7], bool)[42] tuplesArraysVar;
-	int[5][7] doubleArray;
+	float32 anotherVar;
+	float32[5] arrayVar;
+	(float32, int32) tupleVar;
+	((float32, float32), int32) nestedTupleVar;
+	(float32[7], bool)[42] tuplesArraysVar;
+	int32[5][7] doubleArray;
 	inferredVar = 42;
 	println(myVar);
 	println(true);
@@ -22,7 +22,7 @@ void main(){
 	myStruct2 testVar3;
 }
 
-int test2(float testArg){
+int32 test2(float testArg){
 }
 
 

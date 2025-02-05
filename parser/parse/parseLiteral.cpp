@@ -1,6 +1,7 @@
 #include "parseLiteral.hpp"
 #include "../tokenize/mediumTokenize.hpp"
 #include <sstream>
+#include <limits>
 
 parseRes<bool> parseBool(std::span<const mediumToken> tokens){
 	if(tokens.empty())
@@ -29,6 +30,8 @@ parseRes<uint64_t> parseUInt(std::span<const mediumToken> tokens){
 	iss >> std::noskipws >> val;
 	if(!iss.eof() || iss.fail())
 		return std::nullopt;
+
+	parse_debug_print("parsed uint literal");
 	return makeParseRes(val, 1);
 }
 
@@ -53,6 +56,8 @@ parseRes<int64_t> parseInt(std::span<const mediumToken> tokens){
 	iss >> std::noskipws >> val;
 	if(!iss.eof() || iss.fail())
 		return std::nullopt;
+
+	parse_debug_print("parsed int literal");
 	return makeParseRes(val, outputSize);
 }
 
@@ -127,11 +132,22 @@ parseRes<ast::literal> parseLiteral(std::span<const mediumToken> tokens){
 	auto float64Try = parseFloat64(tokens);
 	if(float64Try)
 		return makeParseRes(ast::literal(float64Try->val), float64Try->toksConsumed);
-	auto uintTry = parseInt(tokens);
-	if(uintTry)
-		return makeParseRes(ast::literal(uintTry->val), uintTry->toksConsumed);
+	auto uintTry = parseUInt(tokens);
+	if(uintTry){
+		if(uintTry->val > std::numeric_limits<uint32_t>::max()){
+			return makeParseRes(ast::literal(uintTry->val), uintTry->toksConsumed);
+		}else{
+			return makeParseRes(ast::literal((uint32_t)uintTry->val), uintTry->toksConsumed);
+		}
+	}
 	auto intTry = parseInt(tokens);
-	if(intTry)
-		return makeParseRes(ast::literal(intTry->val), intTry->toksConsumed);
+	if(intTry){
+		if(std::abs(intTry->val) > std::numeric_limits<int32_t>::max()){
+			return makeParseRes(ast::literal(intTry->val), intTry->toksConsumed);
+		}else{
+			//parse_debug_print("demoted int64 to int32 (not big enough)");
+			return makeParseRes(ast::literal((int32_t)intTry->val), intTry->toksConsumed);
+		}
+	}
 	return std::nullopt;
 }

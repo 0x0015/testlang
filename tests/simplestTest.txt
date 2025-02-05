@@ -1,6 +1,6 @@
 
 void main(){
-	int var;
+	int32 var;
 	var = 5;
 	println(var);
 	anotherFunc();

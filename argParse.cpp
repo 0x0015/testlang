@@ -16,7 +16,6 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 			std::cout<<"\t-v | --verbose for verbose"<<std::endl;
 			std::cout<<"\t-l{lib} for linking to a library"<<std::endl;
 			std::cout<<"\t-i for the interpreter"<<std::endl;
-			std::cout<<"\t-i_old for the old interpreter"<<std::endl;
 			std::cout<<"\t-o {output filename} to specify the output filename"<<std::endl;
 			std::cout<<"\t-C_dump to print the cCodeGen generated C code and exit"<<std::endl;
 			std::cout<<"\t-C_use_compiler {compiler command} to force use of a given C compiler"<<std::endl;
@@ -32,10 +31,6 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 		}
 		if(arg == "-i"){
 			output.interpreter = true;
-			continue;
-		}
-		if(arg == "-i_old"){
-			output.oldInterpreter = true;
 			continue;
 		}
 		if(arg == "-o"){
@@ -77,8 +72,8 @@ std::optional<argVals> argVals::parse(int argc, char** argv){
 		std::cerr<<"Argument error: no file input supplied"<<std::endl;
 		return std::nullopt;
 	}
-	if(output.interpreter && output.oldInterpreter){
-		std::cerr<<"Argument error: interpreter and old interpreter are mutually exclusive (must choose one)"<<std::endl;
+	if(output.interpreter && (!output.outputFn.empty() || output.printCCode)){
+		std::cerr<<"Argument error: interpreter and cCodeGen are mutually exclusive (must choose one)"<<std::endl;
 		return std::nullopt;
 	}
 

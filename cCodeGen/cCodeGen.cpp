@@ -17,7 +17,7 @@ std::string cCodeGen::genCCode(const ast::context& context, const std::string_vi
 		return "";
 	}
 
-	std::string code = "#include <stdio.h>\n\n";
+	std::string code = "#include <stdio.h>\n#include<stdint.h>\n\n";
 	auto types = findUsedTypes(*entry);
 	auto funcs = findUsedFunctions(*entry);
 	code += genUsedCTypes(types);

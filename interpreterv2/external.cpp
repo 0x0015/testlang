@@ -45,10 +45,26 @@ ffi_type getFfiType(const ast::type& ty){
 			case ast::type::none_type:
 			case ast::type::void_type:
 				return ffi_type_void;
-			case ast::type::int_type:
-				return ffi_type_sint;
-			case ast::type::float_type:
+			case ast::type::int8_type:
+				return ffi_type_sint8;
+			case ast::type::int16_type:
+				return ffi_type_sint16;
+			case ast::type::int32_type:
+				return ffi_type_sint32;
+			case ast::type::int64_type:
+				return ffi_type_sint64;
+			case ast::type::uint8_type:
+				return ffi_type_uint8;
+			case ast::type::uint16_type:
+				return ffi_type_uint16;
+			case ast::type::uint32_type:
+				return ffi_type_uint32;
+			case ast::type::uint64_type:
+				return ffi_type_uint64;
+			case ast::type::float32_type:
 				return ffi_type_float;
+			case ast::type::float64_type:
+				return ffi_type_double;
 			case ast::type::bool_type:
 				return ffi_type_uint8;
 			default:

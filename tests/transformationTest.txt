@@ -1,5 +1,5 @@
 
-int myTransformation(int i, int j, int k){
+int32 myTransformation(int32 i, int32 j, int32 k){
 	println(i);
 	println(j);
 	println(k);

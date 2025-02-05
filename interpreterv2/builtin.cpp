@@ -3,24 +3,18 @@
 #include "../hashCombine.hpp"
 #include <unordered_map>
 #include <tuple>
+#include <cmath>
 
 namespace interpreterv2{
 namespace impl{
-	void print_int(int val){
-		std::cout<<val;
-	}
-	void print_float(float val){
-		std::cout<<val;
+	template<typename T> void print(T val){
+		std::cout<<+val;
 	}
 	void print_bool(bool val){
 		std::cout<<(val ? "true" : "false");
 	}
-
-	void println_int(int val){
-		std::cout<<val<<std::endl;
-	}
-	void println_float(float val){
-		std::cout<<val<<std::endl;
+	template<typename T> void println(T val){
+		std::cout<<+val<<std::endl;
 	}
 	void println_bool(bool val){
 		std::cout<<(val ? "true" : "false")<<std::endl;
@@ -37,8 +31,14 @@ namespace impl{
 	template<typename T> T div(T val1, T val2){
 		return val1 / val2;
 	}
-	int mod(int val1, int val2){
+	template<typename T> T mod(T val1, T val2){
 		return val1 % val2;
+	}
+	template<> float mod<float>(float val1, float val2){
+		return std::fmod(val1, val2);
+	}
+	template<> double mod<double>(double val1, double val2){
+		return std::fmod(val1, val2);
 	}
 	template<typename T> bool greater(T val1, T val2){
 		return val1 > val2;
@@ -163,41 +163,74 @@ struct builtinFuncLibrary{
 
 builtinFuncLibrary builtinLibrary;
 
+template<typename T> void addBasicPrintBuiltins(const ast::type& ty){
+	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::print<T>);
+	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::println<T>);
+}
+
+template<typename T> void addBasicArithmaticBuiltins(const ast::type& ty){
+	builtinLibrary.bulitinFuncs[{"add", ty, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::add<T>);
+	builtinLibrary.bulitinFuncs[{"mul", ty, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::mul<T>);
+	builtinLibrary.bulitinFuncs[{"sub", ty, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::sub<T>);
+	builtinLibrary.bulitinFuncs[{"div", ty, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::div<T>);
+	builtinLibrary.bulitinFuncs[{"mod", ty, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::mod<T>);
+}
+
+template<typename T> void addBasicLogicBuiltins(const ast::type& ty){
+	builtinLibrary.bulitinFuncs[{"greater", ast::type::bool_type, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::greater<int>);
+	builtinLibrary.bulitinFuncs[{"less", ast::type::bool_type, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::less<int>);
+	builtinLibrary.bulitinFuncs[{"greaterOrEqual", ast::type::bool_type, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::greaterOrEqual<int>);
+	builtinLibrary.bulitinFuncs[{"lessOrEqual", ast::type::bool_type, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::lessOrEqual<int>);
+	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ty, ty}}] = builtinFuncLibrary::wrapFunc(interpreterv2::impl::equal<int>);
+}
+
 void interpreterv2::interpreter::initializeBuiltinLibrary(){
 	builtinLibrary.bulitinFuncs.clear();//make sure it's empty as to prevent double filling (theoretical)
 	
 	//prints
-	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::println_int);
-	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::println_float);
-	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::println_bool);
-	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::print_int);
-	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::print_float);
+	addBasicPrintBuiltins<int8_t>(ast::type::int8_type);
+	addBasicPrintBuiltins<int16_t>(ast::type::int16_type);
+	addBasicPrintBuiltins<int32_t>(ast::type::int32_type);
+	addBasicPrintBuiltins<int64_t>(ast::type::int64_type);
+
+	addBasicPrintBuiltins<uint8_t>(ast::type::uint8_type);
+	addBasicPrintBuiltins<uint16_t>(ast::type::uint16_type);
+	addBasicPrintBuiltins<uint32_t>(ast::type::uint32_type);
+	addBasicPrintBuiltins<uint64_t>(ast::type::uint64_type);
+
+	addBasicPrintBuiltins<float>(ast::type::float32_type);
+	addBasicPrintBuiltins<double>(ast::type::float64_type);
+
 	builtinLibrary.bulitinFuncs[{"print", ast::type::void_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::print_bool);
+	builtinLibrary.bulitinFuncs[{"println", ast::type::void_type, {ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::println_bool);
 
 	//arithmatic
-	builtinLibrary.bulitinFuncs[{"add", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::add<int>);
-	builtinLibrary.bulitinFuncs[{"mul", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::mul<int>);
-	builtinLibrary.bulitinFuncs[{"sub", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::sub<int>);
-	builtinLibrary.bulitinFuncs[{"div", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::div<int>);
-	builtinLibrary.bulitinFuncs[{"mod", ast::type::int_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::mod);
+	addBasicArithmaticBuiltins<int8_t>(ast::type::int8_type);
+	addBasicArithmaticBuiltins<int16_t>(ast::type::int16_type);
+	addBasicArithmaticBuiltins<int32_t>(ast::type::int32_type);
+	addBasicArithmaticBuiltins<int64_t>(ast::type::int64_type);
 
-	builtinLibrary.bulitinFuncs[{"add", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::add<float>);
-	builtinLibrary.bulitinFuncs[{"mul", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::mul<float>);
-	builtinLibrary.bulitinFuncs[{"sub", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::sub<float>);
-	builtinLibrary.bulitinFuncs[{"div", ast::type::float_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::div<float>);
+	addBasicArithmaticBuiltins<uint8_t>(ast::type::uint8_type);
+	addBasicArithmaticBuiltins<uint16_t>(ast::type::uint16_type);
+	addBasicArithmaticBuiltins<uint32_t>(ast::type::uint32_type);
+	addBasicArithmaticBuiltins<uint64_t>(ast::type::uint64_type);
+
+	addBasicArithmaticBuiltins<float>(ast::type::float32_type);
+	addBasicArithmaticBuiltins<double>(ast::type::float64_type);
 
 	//logic
-	builtinLibrary.bulitinFuncs[{"greater", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::greater<int>);
-	builtinLibrary.bulitinFuncs[{"less", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::less<int>);
-	builtinLibrary.bulitinFuncs[{"greaterOrEqual", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::greaterOrEqual<int>);
-	builtinLibrary.bulitinFuncs[{"lessOrEqual", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::lessOrEqual<int>);
-	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::int_type, ast::type::int_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<int>);
+	addBasicLogicBuiltins<int8_t>(ast::type::int8_type);
+	addBasicLogicBuiltins<int16_t>(ast::type::int16_type);
+	addBasicLogicBuiltins<int32_t>(ast::type::int32_type);
+	addBasicLogicBuiltins<int64_t>(ast::type::int64_type);
 
-	builtinLibrary.bulitinFuncs[{"greater", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::greater<float>);
-	builtinLibrary.bulitinFuncs[{"less", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::less<float>);
-	builtinLibrary.bulitinFuncs[{"greaterOrEqual", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::greaterOrEqual<float>);
-	builtinLibrary.bulitinFuncs[{"lessOrEqual", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::lessOrEqual<float>);
-	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::float_type, ast::type::float_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<float>);
+	addBasicLogicBuiltins<uint8_t>(ast::type::uint8_type);
+	addBasicLogicBuiltins<uint16_t>(ast::type::uint16_type);
+	addBasicLogicBuiltins<uint32_t>(ast::type::uint32_type);
+	addBasicLogicBuiltins<uint64_t>(ast::type::uint64_type);
+
+	addBasicLogicBuiltins<float>(ast::type::float32_type);
+	addBasicLogicBuiltins<double>(ast::type::float64_type);
 
 	builtinLibrary.bulitinFuncs[{"equal", ast::type::bool_type, {ast::type::bool_type, ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::equal<bool>);
 	builtinLibrary.bulitinFuncs[{"and", ast::type::bool_type, {ast::type::bool_type, ast::type::bool_type}}] = builtinFuncLibrary::wrapFunc(impl::and_bool);

@@ -1,6 +1,6 @@
 
 void main(){
-	int[3] arr;
+	int32[3] arr;
 	arr[1] = 15;
 	println(arr[1]);
 }

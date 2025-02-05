@@ -33,16 +33,20 @@ std::string cCodeGen::genUsedFunctionForwarddefs(const std::unordered_set<std::r
 std::string literalToCLit(const ast::literal& lit){
 	if(std::holds_alternative<ast::literal::builtin_literal>(lit.value)){
 		const auto& builtin = std::get<ast::literal::builtin_literal>(lit.value);
-		if(std::holds_alternative<int>(builtin)){
-			return std::to_string(std::get<int>(builtin));
-		}else if(std::holds_alternative<float>(builtin)){
-			return std::to_string(std::get<float>(builtin));
-		}else if(std::holds_alternative<bool>(builtin)){
-			return std::get<bool>(builtin) ? "1" : "0";
-		}else{
+		if(builtin.valueless_by_exception()){
 			std::cerr<<"Error: unable to cCodeGen literal (empty)"<<std::endl;
 			return "<error literal>";
 		}
+		return std::visit([](const auto& val)->std::string{
+			using builtinTy = std::decay_t<decltype(val)>;
+			if constexpr(std::is_same_v<bool, builtinTy>){	
+				return val ? "1" : "0";
+			}else if constexpr(std::is_same_v<float, builtinTy>){
+				return std::to_string(val) + "f";
+			}else{
+				return std::to_string(val);
+			}
+		}, builtin);
 	}else if(std::holds_alternative<ast::literal::array_literal>(lit.value)){
 		const auto& array = std::get<ast::literal::array_literal>(lit.value);
 		std::string output = "{";

@@ -5,7 +5,6 @@
 #include "builtins/builtins.hpp"
 #include "parser/parseUtil.hpp"
 #include "argParse.hpp"
-#include "interpreter/interpreter.hpp"
 #include "interpreterv2/interpreter.hpp"
 #include "cCodeGen/cCodeGen.hpp"
 
@@ -37,10 +36,7 @@ int main(int argc, char** argv){
 	if(verbose)
 		parseRes->dump();
 
-	if(args->oldInterpreter){
-		//old is faster but less featured (may catch up slowly)
-		interpreter::interpret(*parseRes, "main", args->links);
-	}else if(args->interpreter){
+	if(args->interpreter){
 		//new is slower, but should be more fleshed out
 		interpreterv2::interpret(*parseRes, "main", args->links);
 	}else{

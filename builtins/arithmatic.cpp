@@ -1,32 +1,34 @@
 #include "builtins.hpp"
 
-void addArithmatic(ast::context& context){
-	ast::function int_add;
-	int_add.name = "add";
-	int_add.ty = ast::type::int_type;
-	int_add.args = {{ast::type::int_type, "val1"}, {ast::type::int_type, "val2"}};
-	int_add.status = ast::function::positionStatus::builtin;
-	addBuiltin(context, int_add);
-	int_add.name = "sub";
-	addBuiltin(context, int_add);
-	int_add.name = "mul";
-	addBuiltin(context, int_add);
-	int_add.name = "div";
-	addBuiltin(context, int_add);
-	int_add.name = "mod";
-	addBuiltin(context, int_add);
+void addBasicArithmatic(const ast::type& ty, ast::context& context){
+	ast::function add;
+	add.name = "add";
+	add.ty = ty;
+	add.args = {{ty, "val1"}, {ty, "val2"}};
+	add.status = ast::function::positionStatus::builtin;
+	addBuiltin(context, add);
+	add.name = "sub";
+	addBuiltin(context, add);
+	add.name = "mul";
+	addBuiltin(context, add);
+	add.name = "div";
+	addBuiltin(context, add);
+	add.name = "mod";
+	addBuiltin(context, add);
+}
 
-	ast::function float_add;
-	float_add.name = "add";
-	float_add.ty = ast::type::float_type;
-	float_add.args = {{ast::type::float_type, "val1"}, {ast::type::float_type, "val2"}};
-	float_add.status = ast::function::positionStatus::builtin;
-	addBuiltin(context, float_add);
-	float_add.name = "sub";
-	addBuiltin(context, float_add);
-	float_add.name = "mul";
-	addBuiltin(context, float_add);
-	float_add.name = "div";
-	addBuiltin(context, float_add);
+void addArithmatic(ast::context& context){
+	addBasicArithmatic(ast::type::int8_type, context);
+	addBasicArithmatic(ast::type::int16_type, context);
+	addBasicArithmatic(ast::type::int32_type, context);
+	addBasicArithmatic(ast::type::int64_type, context);
+
+	addBasicArithmatic(ast::type::uint8_type, context);
+	addBasicArithmatic(ast::type::uint16_type, context);
+	addBasicArithmatic(ast::type::uint32_type, context);
+	addBasicArithmatic(ast::type::uint64_type, context);
+
+	addBasicArithmatic(ast::type::float32_type, context);
+	addBasicArithmatic(ast::type::float64_type, context);
 }
 
