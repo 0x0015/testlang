@@ -54,8 +54,10 @@ bool checkConflictingFunctionDefinitions(const ast::context& context){
 				}
 				if(allMatch){
 					if(it1->second.get().ty != it2->second.get().ty){
-						std::cerr<<"Error: Found functions with same name \""<<funcName<<"\" and arg types, but differing return types"<<std::endl;
-						errored = true;
+						if(funcName != "convert"){//convert is the AND ONLY ONE permissable case.  For that reason, cannot be called manually
+							std::cerr<<"Error: Found functions with same name \""<<funcName<<"\" and arg types, but differing return types"<<std::endl;
+							errored = true;
+						}
 						break;
 					}
 				}

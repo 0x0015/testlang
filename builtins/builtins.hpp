@@ -9,4 +9,5 @@ void addPrints(ast::context& context);
 void addArithmatic(ast::context& context);
 void addLogic(ast::context& context);
 void addArrayOpFuncs(ast::context& context);
+void addConversions(ast::context& context);
 

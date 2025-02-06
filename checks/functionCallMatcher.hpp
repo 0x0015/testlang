@@ -23,8 +23,13 @@ struct functionCallMatcher{
 	ast::context& context;
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::function>> allFunctions;
 	std::unordered_multimap<std::string, std::reference_wrapper<const ast::functionTemplate>> allTemplateFunctions;
+	struct conversionTypePairHasher{
+		std::size_t operator()(const std::pair<ast::type, ast::type>& p) const;
+	};
+	// {to_ty, from_ty}->func
+	std::unordered_map<std::pair<ast::type, ast::type>, std::reference_wrapper<const ast::function>, conversionTypePairHasher> conversionFunctions;
 	struct templateInstantiationHasher{
-		size_t operator()(const std::pair<std::string, std::vector<ast::type>>& p) const;
+		std::size_t operator()(const std::pair<std::string, std::vector<ast::type>>& p) const;
 	};
 	std::unordered_map<std::pair<std::string, std::vector<ast::type>>, std::reference_wrapper<const ast::function>, templateInstantiationHasher> templateInstantiations;
 	std::optional<std::reference_wrapper<const ast::function>> matchCall(ast::call& call, const ast::function& parentFunction, const multiContextDefinedVars_t& definedVars);

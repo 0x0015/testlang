@@ -235,6 +235,9 @@ bool checkFunctionTypeUsesValid(ast::function& func, functionCallMatcher& funcCa
 bool checkTypeUsesValid(ast::context& context){
 	functionCallMatcher funcCallMatcher{context};
 	for(const auto& func : context.funcs){
+		if(func.name == "convert"){
+			funcCallMatcher.conversionFunctions.insert({{func.ty, func.args[0].ty}, std::cref(func)});
+		}
 		funcCallMatcher.allFunctions.insert({func.name, std::cref(func)});
 	}
 	for(const auto& funcTempl : context.funcTemplates){

@@ -5,6 +5,7 @@ void addBuiltins(ast::context& context){
 	addArithmatic(context);
 	addLogic(context);
 	addArrayOpFuncs(context);
+	addConversions(context);
 }
 
 void addBuiltin(ast::context& context, const ast::function& func){

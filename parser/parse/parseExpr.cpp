@@ -9,6 +9,8 @@ parseRes<ast::call> parseCall(std::span<const mediumToken> tokens){
 	if(!std::holds_alternative<basicToken>(tokens.front().value))
 		return std::nullopt;
 	const std::string& name = std::get<basicToken>(tokens.front().value).val;
+	if(name == "convert")
+		return std::nullopt;//direct calls to convert are forbidden
 	tokens = tokens.subspan(1);
 
 	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))

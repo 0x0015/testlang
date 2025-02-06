@@ -1,8 +1,6 @@
 #include "functionCallMatcher.hpp"
 #include "../hashCombine.hpp"
 #include "typeChecker.hpp"
-#include <set>
-
 
 bool multiContextDefinedVars_t::contains(const std::string& str) const{
 	for(const auto& definedVars : upperDefinedVars){
@@ -20,7 +18,9 @@ const ast::type& multiContextDefinedVars_t::at(const std::string& str) const{
 	return defaultReturn;
 }
 
-
+std::size_t functionCallMatcher::conversionTypePairHasher::operator()(const std::pair<ast::type, ast::type>& p) const{
+	return hashing::hashValues(p.first.hash(), p.second.hash());
+}
 
 size_t functionCallMatcher::templateInstantiationHasher::operator()(const std::pair<std::string, std::vector<ast::type>>& p) const{
 	std::size_t output = hashing::hashValues(p.first);
