@@ -1,0 +1,30 @@
+
+void main(){
+	i=0;
+	println(i);
+	i = i+1;
+	println(i);
+	i = i+2*3;
+	println(i);
+	println(10+2*2+10); //should print 10+(2*2)+10=24 rather than 10+(2*(2+10)) = 34
+	if(true && false){
+		println(300);
+	}
+	if(false || true){
+		println(400);
+	}
+	if(true && true){
+		println(500);
+	}
+	for(x=0;x<10;x=x+1){
+		if(i == x || x > 8){
+			println(700);
+		}else{
+			println(x);
+		}
+	}
+	for(x=0;x<5;x=x+1){
+		print(x);
+	}
+	println(0);
+}

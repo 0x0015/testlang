@@ -5,12 +5,11 @@
 #include "builtins/builtins.hpp"
 #include "parser/parseUtil.hpp"
 #include "argParse.hpp"
-#include "minLangConvert/minLangConvert.hpp"
-#include "minLang/backends/cCodeGen/cCodeGen.hpp"
-#include "minLang/backends/interpreter/interpreter.hpp"
+#include "backends/interpreter/interpreter.hpp"
+#include "backends/cCodeGen/cCodeGen.hpp"
 
 int main(int argc, char** argv){
-	auto args = argVals::parse(argc, argv);
+	auto args = minLang::argVals::parse(argc, argv);
 	if(!args)
 		return 0;
 
@@ -27,8 +26,8 @@ int main(int argc, char** argv){
 	
 	if(!parseRes) errored = true;
 	//errored = errored || !checkFunctionsDefined(*parseRes); //problematic and not needed (as this is checked when types are matched in checkTypeUsesValid)
-	errored = errored || !checkConflictingFunctionDefinitions(*parseRes);
-	errored = errored || !checkTypeUsesValid(*parseRes);
+	errored = errored || !minLang::checkConflictingFunctionDefinitions(*parseRes);
+	errored = errored || !minLang::checkTypeUsesValid(*parseRes);
 
 	if(errored){
 		std::cout<<"An error has occurred.  Aborting."<<std::endl;
@@ -37,17 +36,11 @@ int main(int argc, char** argv){
 	if(verbose)
 		parseRes->dump();
 
-	const auto& minLangContext = minLangConvert(*parseRes);
-	if(!minLangContext){
-		std::cout<<"An error occurred while downconverting to minLang.  Aborting."<<std::endl;
-		return -1;
-	}
-
 	if(args->interpreter){
 		//new is slower, but should be more fleshed out
-		minLang::backends::interpreter::interpret(*minLangContext, "main", args->links);
+		minLang::backends::interpreter::interpret(*parseRes, "main", args->links);
 	}else{
-		auto code = minLang::backends::cCodeGen::genCCode(*minLangContext, "main");
+		auto code = minLang::backends::cCodeGen::genCCode(*parseRes, "main");
 		if(args->printCCode){
 			std::cout<<code<<std::endl;
 		}else{

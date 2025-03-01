@@ -1,0 +1,45 @@
+
+alias float -> myAliasStruct;
+template<T> alias T -> myTemplateAliasStruct;
+template<T1, T2> alias (T1, T2) -> tuple;
+template<T> alias T[5] -> fiveLengthArray;
+alias (int32, float32) -> myFunnyTuple;
+
+template<T> void testFunc(){
+	println(3);
+}
+
+template<T> void myPrint(T val){
+	print(42);
+	println(val);
+}
+
+template<T> T getValAndPrint(){
+	myPrint<T>(3);
+	return(3);
+}
+
+void main(){
+	println(0);
+	myAliasStruct val;
+	myTemplateAliasStruct<int32> val2;
+	tuple<float, int32> val3;
+	fiveLengthArray<float> val4;
+	fiveLengthArray<myAliasStruct> val5;
+	fiveLengthArray<myTemplateAliasStruct<float>> val6;
+	fiveLengthArray<myFunnyTuple> val7;
+	fiveLengthArray<tuple<int32, float32>> val8;
+	(int32, float32) val10;
+	fiveLengthArray<(int32, float32)> val9;
+
+	println(1);
+
+	testFunc<int32>();
+	myPrint<float32>(3.14159);
+	a = getValAndPrint<int32>();
+	println(a);
+
+	myPrint(2.71);
+
+	println(2);
+}

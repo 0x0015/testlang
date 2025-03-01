@@ -30,13 +30,35 @@ OBJS	= main.cpp.o\
 	  checks/typeChecker.cpp.o \
 	  checks/functionCallMatcher.cpp.o \
 	  checks/assignmentChecker.cpp.o \
-	  interpreterv2/interpreter.cpp.o \
-	  interpreterv2/builtin.cpp.o \
-	  interpreterv2/external.cpp.o \
-	  cCodeGen/cCodeGen.cpp.o \
-	  cCodeGen/cTypes.cpp.o \
-	  cCodeGen/cFunctionGen.cpp.o \
-	  cCodeGen/cBuiltins.cpp.o
+	  minLangConvert/minLangConvert.cpp.o \
+	  minLang/parser/parse.cpp.o \
+	  minLang/parser/parse/parseContext.cpp.o \
+	  minLang/parser/parse/parseBlock.cpp.o \
+	  minLang/parser/parse/parseFunction.cpp.o \
+	  minLang/parser/parse/parseType.cpp.o \
+	  minLang/parser/parse/parseLiteral.cpp.o \
+	  minLang/parser/parse/parseExpr.cpp.o \
+	  minLang/ast/ast.cpp.o \
+	  minLang/ast/ast_block.cpp.o \
+	  minLang/ast/ast_type.cpp.o \
+	  minLang/ast/ast_literal.cpp.o \
+	  minLang/ast/ast_expr.cpp.o \
+	  minLang/builtins/builtins.cpp.o \
+	  minLang/builtins/prints.cpp.o \
+	  minLang/builtins/arithmatic.cpp.o \
+	  minLang/builtins/logic.cpp.o \
+	  minLang/builtins/convert.cpp.o \
+	  minLang/checks/functionChecker.cpp.o \
+	  minLang/checks/typeChecker.cpp.o \
+	  minLang/checks/functionCallMatcher.cpp.o \
+	  minLang/checks/assignmentChecker.cpp.o \
+	  minLang/backends/interpreter/interpreter.cpp.o \
+	  minLang/backends/interpreter/builtin.cpp.o \
+	  minLang/backends/interpreter/external.cpp.o \
+	  minLang/backends/cCodeGen/cCodeGen.cpp.o \
+	  minLang/backends/cCodeGen/cTypes.cpp.o \
+	  minLang/backends/cCodeGen/cFunctionGen.cpp.o \
+	  minLang/backends/cCodeGen/cBuiltins.cpp.o
 
 
 OUT	= main

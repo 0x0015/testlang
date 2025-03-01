@@ -1,0 +1,28 @@
+//no'ther comment here
+alias int32 -> myStruct;
+strict alias myStruct -> myStruct2;
+void main(){
+//comment here
+	int32 myVar; //this is a comment
+	/*another comment*/
+	float32 anotherVar;
+	float32[5] arrayVar;
+	(float32, int32) tupleVar;
+	((float32, float32), int32) nestedTupleVar;
+	(float32[7], bool)[42] tuplesArraysVar;
+	int32[5][7] doubleArray;
+	inferredVar = 42;
+	println(myVar);
+	println(true);
+	myVar = 5;
+	println(myVar);
+	println(3.14159);
+	println(inferredVar);
+	myStruct testVar2;
+	myStruct2 testVar3;
+}
+
+int32 test2(float testArg){
+}
+
+

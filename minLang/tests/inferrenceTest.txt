@@ -1,0 +1,17 @@
+void main(){
+	int32 var;
+	var = 5;
+	println(var);
+	anotherFunc(var);
+	anotherFunc(5.6);
+}
+
+void anotherFunc(int32 t){
+	println(6);
+	println(t);
+}
+
+void anotherFunc(float32 f){
+	println(7);
+	println(f);
+}
