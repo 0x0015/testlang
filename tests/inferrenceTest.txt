@@ -3,7 +3,7 @@ void main(){
 	var = 5;
 	println(var);
 	anotherFunc(var);
-	anotherFunc(5.6);
+	anotherFunc(5.6f);
 }
 
 void anotherFunc(int32 t){
