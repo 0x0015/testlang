@@ -41,81 +41,6 @@ std::string minLang::backends::cCodeGen::genBuiltins(){
 	println_float_func.args = {ast::function::argument{ast::type::builtin_type::float32_type}};
 	output += "void " + minLang::backends::cCodeGen::mangleFuncName(println_float_func) + "(float val){\n\tprintf(\"%g\\n\", val);\n}\n";
 
-	//arithmatic
-	ast::function add_int_func;
-	add_int_func.name = "add";
-	add_int_func.ty = ast::type::builtin_type::int32_type;
-	add_int_func.args = {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}};
-	output += "int " + minLang::backends::cCodeGen::mangleFuncName(add_int_func) + "(int val1, int val2){\n\treturn(val1+val2);\n}\n";
-
-	ast::function sub_int_func{ast::type::builtin_type::int32_type, "sub", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "int " + minLang::backends::cCodeGen::mangleFuncName(sub_int_func) + "(int val1, int val2){\n\treturn(val1-val2);\n}\n";
-
-	ast::function mul_int_func{ast::type::builtin_type::int32_type, "mul", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "int " + minLang::backends::cCodeGen::mangleFuncName(mul_int_func) + "(int val1, int val2){\n\treturn(val1*val2);\n}\n";
-
-	ast::function div_int_func{ast::type::builtin_type::int32_type, "div", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "int " + minLang::backends::cCodeGen::mangleFuncName(div_int_func) + "(int val1, int val2){\n\treturn(val1/val2);\n}\n";
-
-	ast::function mod_int_func{ast::type::builtin_type::int32_type, "mod", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "int " + minLang::backends::cCodeGen::mangleFuncName(mod_int_func) + "(int val1, int val2){\n\treturn(val1%val2);\n}\n";
-
-
-	ast::function add_float_func{ast::type::builtin_type::float32_type, "add", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "float " + minLang::backends::cCodeGen::mangleFuncName(add_float_func) + "(float val1, float val2){\n\treturn(val1+val2);\n}\n";
-
-	ast::function sub_float_func{ast::type::builtin_type::float32_type, "sub", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "float " + minLang::backends::cCodeGen::mangleFuncName(sub_float_func) + "(float val1, float val2){\n\treturn(val1-val2);\n}\n";
-
-	ast::function mul_float_func{ast::type::builtin_type::float32_type, "mul", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "float " + minLang::backends::cCodeGen::mangleFuncName(mul_float_func) + "(float val1, float val2){\n\treturn(val1*val2);\n}\n";
-
-	ast::function div_float_func{ast::type::builtin_type::float32_type, "div", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "float " + minLang::backends::cCodeGen::mangleFuncName(div_float_func) + "(float val1, float val2){\n\treturn(val1/val2);\n}\n";
-
-	//logic
-	ast::function equal_int_func{ast::type::builtin_type::bool_type, "equal", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(equal_int_func) + "(int val1, int val2){\n\treturn(val1 == val2);\n}\n";
-
-	ast::function equal_float_func{ast::type::builtin_type::bool_type, "equal", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(equal_float_func) + "(float val1, float val2){\n\treturn(val1 == val2);\n}\n";
-
-	ast::function equal_bool_func{ast::type::builtin_type::bool_type, "equal", {ast::function::argument{ast::type::builtin_type::bool_type}, ast::function::argument{ast::type::builtin_type::bool_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(equal_bool_func) + "(unsigned char val1, unsigned char val2){\n\treturn(val1 == val2);\n}\n";
-
-	ast::function greater_int_func{ast::type::builtin_type::bool_type, "greater", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(greater_int_func) + "(int val1, int val2){\n\treturn(val1 > val2);\n}\n";
-
-	ast::function greater_float_func{ast::type::builtin_type::bool_type, "greater", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(greater_float_func) + "(float val1, float val2){\n\treturn(val1 > val2);\n}\n";
-
-	ast::function less_int_func{ast::type::builtin_type::bool_type, "less", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(less_int_func) + "(int val1, int val2){\n\treturn(val1 < val2);\n}\n";
-
-	ast::function less_float_func{ast::type::builtin_type::bool_type, "less", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(less_float_func) + "(float val1, float val2){\n\treturn(val1 < val2);\n}\n";
-
-	ast::function greaterOrEqual_int_func{ast::type::builtin_type::bool_type, "greaterOrEqual", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(greaterOrEqual_int_func) + "(int val1, int val2){\n\treturn(val1 >= val2);\n}\n";
-
-	ast::function greaterOrEqual_float_func{ast::type::builtin_type::bool_type, "greaterOrEqual", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(greaterOrEqual_float_func) + "(float val1, float val2){\n\treturn(val1 >= val2);\n}\n";
-
-	ast::function lessOrEqual_int_func{ast::type::builtin_type::bool_type, "lessOrEqual", {ast::function::argument{ast::type::builtin_type::int32_type}, ast::function::argument{ast::type::builtin_type::int32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(lessOrEqual_int_func) + "(int val1, int val2){\n\treturn(val1 <= val2);\n}\n";
-
-	ast::function lessOrEqual_float_func{ast::type::builtin_type::bool_type, "lessOrEqual", {ast::function::argument{ast::type::builtin_type::float32_type}, ast::function::argument{ast::type::builtin_type::float32_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(lessOrEqual_float_func) + "(float val1, float val2){\n\treturn(val1 <= val2);\n}\n";
-
-	ast::function and_bool_func{ast::type::builtin_type::bool_type, "and", {ast::function::argument{ast::type::builtin_type::bool_type}, ast::function::argument{ast::type::builtin_type::bool_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(and_bool_func) + "(unsigned char val1, unsigned char val2){\n\treturn(val1 && val2);\n}\n";
-
-	ast::function or_bool_func{ast::type::builtin_type::bool_type, "or", {ast::function::argument{ast::type::builtin_type::bool_type}, ast::function::argument{ast::type::builtin_type::bool_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(or_bool_func) + "(unsigned char val1, unsigned char val2){\n\treturn(val1 || val2);\n}\n";
-
-	ast::function not_bool_func{ast::type::builtin_type::bool_type, "not", {ast::function::argument{ast::type::builtin_type::bool_type}}};
-	output += "unsigned char " + minLang::backends::cCodeGen::mangleFuncName(not_bool_func) + "(unsigned char val){\n\treturn(!val);\n}\n";
-
 	return output;
 }
 
@@ -135,5 +60,54 @@ std::string minLang::backends::cCodeGen::genTemplateFuncBuiltins(const std::unor
 		}
 	}
 	return output;
+}
+
+bool minLang::backends::cCodeGen::isSpecificBuiltinFuncCase(const ast::function& func){
+	if(func.status != ast::function::positionStatus::builtin)
+		return false;
+	//arithmatic
+	if(func.name == "add" || func.name == "sub" || func.name == "mul" || func.name == "div" || func.name == "mod")
+		return true;
+	//logic
+	if(func.name == "equal" || func.name == "greater" || func.name == "less" || func.name == "greaterOrEqual" || func.name == "lessOrEqual")
+		return true;
+	if(func.name == "and" || func.name == "or" || func.name == "not")
+		return true;
+	return false;
+}
+
+std::string minLang::backends::cCodeGen::genSpecificBuiltinFuncCase(const ast::call& call, const std::vector<std::string>& generatedArgs){
+	//arithmatic
+	if(call.name == "add")
+		return "(" + generatedArgs[0] + "+" + generatedArgs[1] + ")";
+	if(call.name == "sub")
+		return "(" + generatedArgs[0] + "-" + generatedArgs[1] + ")";
+	if(call.name == "div")
+		return "(" + generatedArgs[0] + "/" + generatedArgs[1] + ")";
+	if(call.name == "mul")
+		return "(" + generatedArgs[0] + "*" + generatedArgs[1] + ")";
+	if(call.name == "mod")
+		return "(" + generatedArgs[0] + "%" + generatedArgs[1] + ")";
+
+	//logic
+	if(call.name == "equal")
+		return "(" + generatedArgs[0] + "==" + generatedArgs[1] + ")";
+	if(call.name == "greater")
+		return "(" + generatedArgs[0] + ">" + generatedArgs[1] + ")";
+	if(call.name == "less")
+		return "(" + generatedArgs[0] + "<" + generatedArgs[1] + ")";
+	if(call.name == "greaterOrEqual")
+		return "(" + generatedArgs[0] + ">=" + generatedArgs[1] + ")";
+	if(call.name == "lessOrEqual")
+		return "(" + generatedArgs[0] + "<=" + generatedArgs[1] + ")";
+	if(call.name == "and")
+		return "(" + generatedArgs[0] + "&&" + generatedArgs[1] + ")";
+	if(call.name == "or")
+		return "(" + generatedArgs[0] + "||" + generatedArgs[1] + ")";
+	if(call.name == "not")
+		return "(!" + generatedArgs[0] + ")";
+
+	std::cerr<<"Internal error: cCodeGen specfic builtin case fell through! (call name: "<<call.name<<")"<<std::endl;
+	return "";//should never get to this case
 }
 

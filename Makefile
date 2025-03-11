@@ -52,6 +52,7 @@ OBJS	= main.cpp.o\
 	  minLang/checks/typeChecker.cpp.o \
 	  minLang/checks/functionCallMatcher.cpp.o \
 	  minLang/checks/assignmentChecker.cpp.o \
+	  minLang/backends/util.cpp.o \
 	  minLang/backends/interpreter/interpreter.cpp.o \
 	  minLang/backends/interpreter/builtin.cpp.o \
 	  minLang/backends/interpreter/external.cpp.o \

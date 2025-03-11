@@ -1,10 +1,14 @@
 #include "cCodeGen.hpp"
 
-std::string genUsedFunctionForwarddef(const minLang::ast::function& func, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& types){
+std::string genUsedFunctionForwarddef(const minLang::ast::function& func, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::typeHasher>& types){
 	std::string output;
 	output += types.at(func.ty).cName;
-	if(func.status == minLang::ast::function::positionStatus::normal || func.status == minLang::ast::function::positionStatus::builtin){
+	if(func.status == minLang::ast::function::positionStatus::normal){
 		output += " " + minLang::backends::cCodeGen::mangleFuncName(func) + "(";
+	}else if(func.status == minLang::ast::function::positionStatus::builtin){
+		if(minLang::backends::cCodeGen::isSpecificBuiltinFuncCase(func))
+			return "";
+		output += " " + minLang::backends::cCodeGen::mangleFuncName(func) + "("; //if it's a specific case, custom code will be generated so skip over it
 	}else if(func.status == minLang::ast::function::positionStatus::external){
 		output += " " + func.name + "(";
 	}
@@ -63,20 +67,27 @@ std::string literalToCLit(const minLang::ast::literal& lit){
 	}
 }
 
-std::string genExprDef(const minLang::ast::expr& expr, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& types){
+std::string genExprDef(const minLang::ast::expr& expr, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::typeHasher>& types){
 	if(std::holds_alternative<minLang::ast::literal>(expr.value)){
 		const auto& lit = std::get<minLang::ast::literal>(expr.value);
 		return literalToCLit(lit);
 	}else if(std::holds_alternative<minLang::ast::call>(expr.value)){
 		const auto& call = std::get<minLang::ast::call>(expr.value);
-		std::string output = minLang::backends::cCodeGen::mangleFuncName(call.validatedDef->get()) + "(";
-		for(unsigned int i=0;i<call.args.size();i++){
-			output += genExprDef(call.args[i], types);
-			if(i+1 < call.args.size())
-				output += ", ";
+		if(call.validatedDef->get().status == minLang::ast::function::builtin && minLang::backends::cCodeGen::isSpecificBuiltinFuncCase(*call.validatedDef)){
+			std::vector<std::string> generatedArgs(call.args.size());
+			for(unsigned int i=0;i<call.args.size();i++)
+				generatedArgs[i] = genExprDef(call.args[i], types);
+			return minLang::backends::cCodeGen::genSpecificBuiltinFuncCase(call, generatedArgs);
+		}else{
+			std::string output = minLang::backends::cCodeGen::mangleFuncName(call.validatedDef->get()) + "(";
+			for(unsigned int i=0;i<call.args.size();i++){
+				output += genExprDef(call.args[i], types);
+				if(i+1 < call.args.size())
+					output += ", ";
+			}
+			output += ")";
+			return output;
 		}
-		output += ")";
-		return output;
 	}else if(std::holds_alternative<minLang::ast::varName>(expr.value)){
 		const auto& varName = std::get<minLang::ast::varName>(expr.value);
 		return minLang::backends::cCodeGen::mangleName(varName.name);
@@ -86,7 +97,7 @@ std::string genExprDef(const minLang::ast::expr& expr, const std::unordered_map<
 	}
 }
 
-std::string genBlockDef(const minLang::ast::block& block, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& types){
+std::string genBlockDef(const minLang::ast::block& block, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::typeHasher>& types){
 	std::string output = "{\n";
 	for(const auto& statement : block.statements){
 		if(std::holds_alternative<minLang::ast::block::declaration>(statement)){
@@ -123,7 +134,7 @@ std::string genBlockDef(const minLang::ast::block& block, const std::unordered_m
 	return output;
 }
 
-std::string genFunctionDef(const minLang::ast::function& func, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& types){
+std::string genFunctionDef(const minLang::ast::function& func, const std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::typeHasher>& types){
 	if(func.status != minLang::ast::function::positionStatus::normal){
 		//std::cout<<"ignoring function with non-normal status: "<<func.name<<std::endl;
 		//no need to warn, as this is expected (as builtin and external functions should well not have a body generated for them)

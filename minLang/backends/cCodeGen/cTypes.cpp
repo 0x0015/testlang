@@ -1,62 +1,9 @@
 #include "cCodeGen.hpp"
-#include <unordered_set>
 
-void findUsedTypes_iter(const minLang::ast::block& block, std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions);
-void findUsedTypes_iter_addExpr(const minLang::ast::expr& expr, std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions){
-	if(std::holds_alternative<minLang::ast::literal>(expr.value)){
-		const auto& lit = std::get<minLang::ast::literal>(expr.value);
-		foundTypes[lit.ty] = {};
-	}else if(std::holds_alternative<minLang::ast::call>(expr.value)){
-		const auto& call = std::get<minLang::ast::call>(expr.value);
-		foundTypes[call.validatedDef->get().ty] = {};
-		for(const auto& arg : call.args)
-			findUsedTypes_iter_addExpr(arg, foundTypes, traversedFunctions);
-		if(!traversedFunctions.contains(minLang::backends::cCodeGen::mangleFuncName(call.validatedDef->get()))){
-			traversedFunctions.insert(minLang::backends::cCodeGen::mangleFuncName(call.validatedDef->get()));
-			findUsedTypes_iter(call.validatedDef->get().body, foundTypes, traversedFunctions);
-		}
-	}else if(std::holds_alternative<minLang::ast::varName>(expr.value)){
-		const auto& varName = std::get<minLang::ast::varName>(expr.value);
-		foundTypes[*varName.matchedType] = {};
-	}else{
-		std::cerr<<"cCodeGen Error: found unknown expr while searhcing for types"<<std::endl;
-	}
-}
-
-void findUsedTypes_iter(const minLang::ast::block& block, std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher>& foundTypes, std::unordered_set<std::string>& traversedFunctions){
-	for(const auto& state : block.statements){
-		if(std::holds_alternative<minLang::ast::expr>(state)){
-			const auto& expr = std::get<minLang::ast::expr>(state);
-			findUsedTypes_iter_addExpr(expr, foundTypes, traversedFunctions);
-		}else if(std::holds_alternative<minLang::ast::block::declaration>(state)){
-			const auto& decl = std::get<minLang::ast::block::declaration>(state);
-			foundTypes[decl.ty] = {};
-		}else if(std::holds_alternative<minLang::ast::block::assignment>(state)){
-			//can be ignored as we're (hopefully) only assigning to variable we've already defined (and thus we already know the type)
-		}else if(std::holds_alternative<minLang::ast::block::ifStatement>(state)){
-			const auto& ifStat = std::get<minLang::ast::block::ifStatement>(state);
-			findUsedTypes_iter_addExpr(ifStat.condition, foundTypes, traversedFunctions);
-			findUsedTypes_iter(*ifStat.ifBody, foundTypes, traversedFunctions);
-			findUsedTypes_iter(*ifStat.elseBody, foundTypes, traversedFunctions);
-		}else if(std::holds_alternative<minLang::ast::block::forStatement_while>(state)){
-			const auto& whileStat = std::get<minLang::ast::block::forStatement_while>(state);
-			findUsedTypes_iter_addExpr(whileStat.condition, foundTypes, traversedFunctions);
-			findUsedTypes_iter(*whileStat.body, foundTypes, traversedFunctions);
-		}else if(std::holds_alternative<minLang::ast::block::forStatement_normal>(state)){
-			const auto& forStat = std::get<minLang::ast::block::forStatement_normal>(state);
-			findUsedTypes_iter_addExpr(forStat.breakCond, foundTypes, traversedFunctions);
-			findUsedTypes_iter(*forStat.body, foundTypes, traversedFunctions);
-		}else{
-			std::cerr<<"cCodeGen Error: found unknown statement while searching for types in block"<<std::endl;
-		}
-	}
-}
-
-std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::cCodeGen::typeHasher> minLang::backends::cCodeGen::findUsedTypes(std::reference_wrapper<const minLang::ast::function> entrypoint){
-	std::unordered_map<minLang::ast::type, cTypeInfo, minLang::backends::cCodeGen::typeHasher> output;
-	std::unordered_set<std::string> traversedFunctions;
-	traversedFunctions.insert(mangleFuncName(entrypoint.get()));
-	findUsedTypes_iter(entrypoint.get().body, output, traversedFunctions);
+std::unordered_map<minLang::ast::type, minLang::backends::cCodeGen::cTypeInfo, minLang::backends::typeHasher> minLang::backends::cCodeGen::findUsedTypes(std::reference_wrapper<const minLang::ast::function> entrypoint){
+	std::unordered_map<minLang::ast::type, cTypeInfo, minLang::backends::typeHasher> output;
+	for(const auto& ty : minLang::backends::findUsedTypes(entrypoint))
+		output[ty] = {};
 	return output;
 }
 
@@ -100,7 +47,7 @@ struct typeStructTable{
 private:
 	static inline const typeStructTable_entry defaultEntry = {};
 public:
-	std::unordered_set<minLang::ast::type, minLang::backends::cCodeGen::typeHasher> knownTypes;
+	std::unordered_set<minLang::ast::type, minLang::backends::typeHasher> knownTypes;
 	std::vector<typeStructTable_entry> entries;//we want the entries to be ordered so that if (int, float) is struct 0, then it is above (in the c file) ((int, float), bool) which contains it.
 	const typeStructTable_entry& find(const minLang::ast::type& ty) const{
 		for(const auto& entry : entries){

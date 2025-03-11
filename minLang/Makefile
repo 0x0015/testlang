@@ -27,6 +27,7 @@ OBJS	= main.cpp.o\
 	  checks/typeChecker.cpp.o \
 	  checks/functionCallMatcher.cpp.o \
 	  checks/assignmentChecker.cpp.o \
+	  backends/util.cpp.o \
 	  backends/interpreter/interpreter.cpp.o \
 	  backends/interpreter/builtin.cpp.o \
 	  backends/interpreter/external.cpp.o \
