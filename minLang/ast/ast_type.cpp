@@ -51,6 +51,16 @@ std::string minLang::ast::type::toString() const{
 	}else if(std::holds_alternative<array_type>(ty)){
 		const auto& array = std::get<array_type>(ty);
 		return array.ty->toString() + "[" + std::to_string(array.length) + "]";
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
+		std::string output = "(";
+		for(unsigned int i=0;i<tuple.size();i++){
+			output += tuple[i].toString();
+			if(i+1 < tuple.size())
+				output += ", ";
+		}
+		output += ")";
+		return output;
 	}else{
 		std::cerr<<"An unknown error (theoretically impossible) in type::toString has occurred"<<std::endl;
 		return "void";
@@ -75,7 +85,7 @@ unsigned int minLang::ast::type::getSize() const{
 			case minLang::ast::type::int64_type:
 			case minLang::ast::type::uint64_type:
 			case minLang::ast::type::float64_type:
-				return 4;
+				return 8;
 			case minLang::ast::type::bool_type:
 				return 1;
 			default:
@@ -85,6 +95,13 @@ unsigned int minLang::ast::type::getSize() const{
 	}else if(std::holds_alternative<minLang::ast::type::array_type>(ty)){
 		const auto& array_ty = std::get<minLang::ast::type::array_type>(ty);
 		return array_ty.ty->getSize() * array_ty.length;
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty)){
+		const auto& tuple_ty = std::get<ast::type::tuple_type>(ty);
+		unsigned int output = 0;
+		for(const auto& o : tuple_ty){
+			output += o.getSize();
+		}
+		return output;
 	}else{
 		std::cerr<<"Error: unknown type of type"<<std::endl;
 		return 0;
@@ -100,6 +117,14 @@ minLang::ast::type minLang::ast::type::clone() const{
 		output.ty = std::make_shared<type>(*array.ty);
 		output.length = array.length;
 		return output;
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
+		tuple_type output;
+		output.resize(tuple.size());
+		for(unsigned int i=0;i<output.size();i++){
+			output[i] = tuple[i].clone();
+		}
+		return output;
 	}else{
 		return minLang::ast::type::builtin_type::none_type;
 	}
@@ -111,6 +136,12 @@ std::size_t minLang::ast::type::hash() const{
 	}else if(std::holds_alternative<array_type>(ty)){
 		const auto& array = std::get<array_type>(ty);
 		return hashing::hashValues(COMPILE_TIME_CRC32_STR("array_type"), array.ty->hash(), array.length);
+	}else if(std::holds_alternative<tuple_type>(ty)){
+		const auto& tuple = std::get<tuple_type>(ty);
+		std::size_t output = COMPILE_TIME_CRC32_STR("tuple_type");
+		for(const auto& tuple_ty : tuple)
+			output = hashing::hashValues(output, tuple_ty.hash());
+		return output;
 	}else{
 		return 0;
 	}

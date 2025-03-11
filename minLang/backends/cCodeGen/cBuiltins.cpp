@@ -23,6 +23,12 @@ std::string minLang::backends::cCodeGen::genBuiltins(){
 	print_float_func.args = {ast::function::argument{ast::type::builtin_type::float32_type}};
 	output += "void " + minLang::backends::cCodeGen::mangleFuncName(print_float_func) + "(float val){\n\tprintf(\"%g\", val);\n}\n";
 
+	ast::function print_double_func;
+	print_double_func.name = "print";
+	print_double_func.ty = ast::type::builtin_type::void_type;
+	print_double_func.args = {ast::function::argument{ast::type::builtin_type::float64_type}};
+	output += "void " + minLang::backends::cCodeGen::mangleFuncName(print_double_func) + "(double val){\n\tprintf(\"%g\", val);\n}\n";
+
 	ast::function println_int_func;
 	println_int_func.name = "println";
 	println_int_func.ty = ast::type::builtin_type::void_type;
@@ -40,6 +46,12 @@ std::string minLang::backends::cCodeGen::genBuiltins(){
 	println_float_func.ty = ast::type::builtin_type::void_type;
 	println_float_func.args = {ast::function::argument{ast::type::builtin_type::float32_type}};
 	output += "void " + minLang::backends::cCodeGen::mangleFuncName(println_float_func) + "(float val){\n\tprintf(\"%g\\n\", val);\n}\n";
+
+	ast::function println_double_func;
+	println_double_func.name = "println";
+	println_double_func.ty = ast::type::builtin_type::void_type;
+	println_double_func.args = {ast::function::argument{ast::type::builtin_type::float64_type}};
+	output += "void " + minLang::backends::cCodeGen::mangleFuncName(println_double_func) + "(double val){\n\tprintf(\"%g\\n\", val);\n}\n";
 
 	return output;
 }

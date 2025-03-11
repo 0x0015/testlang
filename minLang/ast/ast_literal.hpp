@@ -11,7 +11,10 @@ namespace ast{
 		struct array_literal{
 			std::vector<literal> vals;
 		};
-		std::variant<builtin_literal, array_literal> value;
+		struct tuple_literal{
+			std::vector<literal> vals;
+		};
+		std::variant<builtin_literal, array_literal, tuple_literal> value;
 		literal() = default;
 		literal(int64_t v) : value(builtin_literal{v}), ty(type::int64_type){}
 		literal(uint64_t v) : value(builtin_literal{v}), ty(type::uint64_type){}
@@ -32,6 +35,17 @@ namespace ast{
 					ty = type::none_type;
 				}
 			}
+		}	
+		literal(const tuple_literal& v) : value(v){	
+			if(v.vals.size() == 0){
+				ty = type::none_type;
+				return;
+			}
+			ty = type::tuple_type{};
+			auto& tuple_ty = std::get<type::tuple_type>(ty.ty);
+			tuple_ty.reserve(v.vals.size());
+			for(const auto& o : v.vals)
+				tuple_ty.push_back(o.ty);
 		}
 		literal(const literal& lit) : value(lit.value), ty(lit.ty){}
 		std::string toString() const;

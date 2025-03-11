@@ -23,7 +23,7 @@ parseRes<ast::function> parseFunction(std::span<const mediumToken> tokens){
 	const auto& name = std::get<basicToken>(tokens.front().value).val;
 	tokens = tokens.subspan(1);
 	offset++;
-	parse_debug_print("function parsed name");
+	parse_debug_print("function parsed name: " + name);
 	//args
 	const auto& args = parseFunctionArgs(tokens);
 	if(!args)
@@ -97,6 +97,7 @@ parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const
 	const auto& list = std::get<mediumToken::tokList>(tokens.front().value);
 	if(list.type != mediumToken::tokList::type_t::PAREN)
 		return std::nullopt;
+	parse_debug_print("function arg found parens (size: " + std::to_string(list.value.size()) + ")");
 	std::vector<ast::function::argument> output;
 	auto lTokens = std::span<const mediumToken>(list.value);
 	for(unsigned int i=0;i<list.value.size();i++){
@@ -129,6 +130,7 @@ parseRes<std::vector<ast::function::argument>> parseFunctionArgs(std::span<const
 		output.push_back(ast::function::argument{ty->val, name.val});
 	}
 
+	parse_debug_print("function arg parse done");
 	return makeParseRes(output, 1);
 }
 
@@ -155,7 +157,7 @@ parseRes<std::monostate> looksLikeFunction(std::span<const mediumToken> tokens){
 		return std::nullopt;
 	tokens = tokens.subspan(1);
 	offset++;
-	parse_debug_print("function parsed name");
+	parse_debug_print("(looks like) function parsed name");
 	//args
 	if(tokens.empty())
 		return std::nullopt;
@@ -215,7 +217,7 @@ parseRes<std::monostate> looksLikeExternalFunction(std::span<const mediumToken> 
 		return std::nullopt;
 	tokens = tokens.subspan(1);
 	offset++;
-	parse_debug_print("extern function parsed name");
+	parse_debug_print("(looks like) extern function parsed name");
 	//args
 	if(tokens.empty())
 		return std::nullopt;

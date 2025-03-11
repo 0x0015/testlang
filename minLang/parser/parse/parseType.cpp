@@ -29,12 +29,44 @@ parseRes<minLang::ast::type::array_type> parseArrayType(std::span<const mediumTo
 	minLang::ast::type::array_type output{currentTy, (unsigned int)std::stoul(std::get<basicToken>(tList.value.front().value).val)};
 	return makeParseRes(output, 1);
 }
+
+parseRes<minLang::ast::type::tuple_type> parseTupleType(std::span<const mediumToken> tokens){
+	if(tokens.empty())
+		return std::nullopt;
+	if(!std::holds_alternative<mediumToken::tokList>(tokens.front().value))
+		return std::nullopt;
+	const auto& tList = std::get<mediumToken::tokList>(tokens.front().value);
+	if(tList.type != mediumToken::tokList::PAREN)
+		return std::nullopt;
+	std::span<const mediumToken> toks(tList.value);
+	ast::type::tuple_type output;
+	while(!toks.empty()){
+		auto typeTry = parseType(toks);
+		if(!typeTry)
+			return std::nullopt;
+		output.push_back(typeTry->val);
+		toks = toks.subspan(typeTry->toksConsumed);
+		//if that's all the type in the tuple, just end now
+		if(toks.empty())
+			break;
+		//alright, there must be at least one more
+		if(toks.size() < 2)
+			return std::nullopt;
+		if(!std::holds_alternative<basicToken>(toks.front().value))
+			return std::nullopt;
+		if(std::get<basicToken>(toks.front().value).val != ",")
+			return std::nullopt;
+		toks = toks.subspan(1);
+	}
+	return makeParseRes(output, 1);
+}
+
 }
 
 parseRes<minLang::ast::type> minLang::parseType(std::span<const mediumToken> tokens){
 	if(tokens.empty())
 		return std::nullopt;
-	auto builtinTry = parseBuiltinType(tokens);
+	const auto& builtinTry = parseBuiltinType(tokens);
 	minLang::ast::type ty;
 	unsigned int consumed = 0;
 	//ugly logic here, good enough for now
@@ -43,7 +75,14 @@ parseRes<minLang::ast::type> minLang::parseType(std::span<const mediumToken> tok
 		consumed += builtinTry->toksConsumed;
 		ty = builtinTry->val;
 	}else{
-		return std::nullopt;
+		const auto& tupleTry = parseTupleType(tokens);
+		if(tupleTry){
+			tokens = tokens.subspan(tupleTry->toksConsumed);
+			consumed += tupleTry->toksConsumed;
+			ty = tupleTry->val;
+		}else{
+			return std::nullopt;
+		}
 	}
 	while(!tokens.empty()){
 		auto arrayTry = parseArrayType(tokens, ty);

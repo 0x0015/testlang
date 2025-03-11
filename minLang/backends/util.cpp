@@ -106,7 +106,7 @@ void findUsedTypes_iter_addExpr(const minLang::ast::expr& expr, std::unordered_s
 		const auto& varName = std::get<minLang::ast::varName>(expr.value);
 		foundTypes.insert(*varName.matchedType);
 	}else{
-		std::cerr<<"cCodeGen Error: found unknown expr while searhcing for types"<<std::endl;
+		std::cerr<<"Error: found unknown expr while searhcing for types"<<std::endl;
 	}
 }
 
@@ -134,7 +134,7 @@ void findUsedTypes_iter(const minLang::ast::block& block, std::unordered_set<min
 			findUsedTypes_iter_addExpr(forStat.breakCond, foundTypes, traversedFunctions);
 			findUsedTypes_iter(*forStat.body, foundTypes, traversedFunctions);
 		}else{
-			std::cerr<<"cCodeGen Error: found unknown statement while searching for types in block"<<std::endl;
+			std::cerr<<"Error: found unknown statement while searching for types in block"<<std::endl;
 		}
 	}
 }
@@ -147,3 +147,103 @@ std::unordered_set<minLang::ast::type, minLang::backends::typeHasher> minLang::b
 	return output;
 }
 
+
+void checkCallsValid_iter(const minLang::ast::block& block, bool& valid, std::unordered_set<std::reference_wrapper<const minLang::ast::function>, minLang::backends::funcSigHasher, minLang::backends::funcSigComp>& traversedFunctions);
+
+void checkCallsValid_iter_addExpr(const minLang::ast::expr& expr, bool& valid, std::unordered_set<std::reference_wrapper<const minLang::ast::function>, minLang::backends::funcSigHasher, minLang::backends::funcSigComp>& traversedFunctions){
+	if(std::holds_alternative<minLang::ast::call>(expr.value)){
+		const auto& call = std::get<minLang::ast::call>(expr.value);
+		if(!call.validatedDef){
+			std::cerr<<"Encountered non-valid call: "<<call.name<<std::endl;
+			valid = false;
+			return;
+		}
+		for(const auto& arg : call.args)
+			checkCallsValid_iter_addExpr(arg, valid, traversedFunctions);
+		if(!traversedFunctions.contains(call.validatedDef->get())){
+			traversedFunctions.insert(call.validatedDef->get());
+			checkCallsValid_iter(call.validatedDef->get().body, valid, traversedFunctions);
+		}
+	}
+}
+
+void checkCallsValid_iter(const minLang::ast::block& block, bool& valid, std::unordered_set<std::reference_wrapper<const minLang::ast::function>, minLang::backends::funcSigHasher, minLang::backends::funcSigComp>& traversedFunctions){
+	for(const auto& state : block.statements){
+		if(std::holds_alternative<minLang::ast::expr>(state)){
+			const auto& expr = std::get<minLang::ast::expr>(state);
+			checkCallsValid_iter_addExpr(expr, valid, traversedFunctions);
+		}else if(std::holds_alternative<minLang::ast::block::declaration>(state)){
+		}else if(std::holds_alternative<minLang::ast::block::assignment>(state)){
+			//can be ignored as we're (hopefully) only assigning to variable we've already defined (and thus we already know the type)
+		}else if(std::holds_alternative<minLang::ast::block::ifStatement>(state)){
+			const auto& ifStat = std::get<minLang::ast::block::ifStatement>(state);
+			checkCallsValid_iter_addExpr(ifStat.condition, valid, traversedFunctions);
+			checkCallsValid_iter(*ifStat.ifBody, valid, traversedFunctions);
+			checkCallsValid_iter(*ifStat.elseBody, valid, traversedFunctions);
+		}else if(std::holds_alternative<minLang::ast::block::forStatement_while>(state)){
+			const auto& whileStat = std::get<minLang::ast::block::forStatement_while>(state);
+			checkCallsValid_iter_addExpr(whileStat.condition, valid, traversedFunctions);
+			checkCallsValid_iter(*whileStat.body, valid, traversedFunctions);
+		}else if(std::holds_alternative<minLang::ast::block::forStatement_normal>(state)){
+			const auto& forStat = std::get<minLang::ast::block::forStatement_normal>(state);
+			checkCallsValid_iter_addExpr(forStat.breakCond, valid, traversedFunctions);
+			checkCallsValid_iter(*forStat.body, valid, traversedFunctions);
+		}else{
+			std::cerr<<"Error: found unknown statement while searching for types in block"<<std::endl;
+		}
+	}
+}
+
+bool minLang::backends::checkAllCallsValidated(const minLang::ast::function& entrypoint){
+	bool output = true;
+	std::unordered_set<std::reference_wrapper<const minLang::ast::function>, minLang::backends::funcSigHasher, minLang::backends::funcSigComp> traversedFunctions;
+	traversedFunctions.insert(entrypoint);
+	checkCallsValid_iter(entrypoint.body, output, traversedFunctions);
+	return output;
+}
+
+void checkCallsValid_nonrecursive_addExpr(const minLang::ast::expr& expr, bool& valid){
+	if(std::holds_alternative<minLang::ast::call>(expr.value)){
+		const auto& call = std::get<minLang::ast::call>(expr.value);
+		if(!call.validatedDef){
+			std::cerr<<"Encountered non-valid call: "<<call.name<<std::endl;
+			valid = false;
+			return;
+		}
+		for(const auto& arg : call.args)
+			checkCallsValid_nonrecursive_addExpr(arg, valid);
+	}
+}
+
+void checkCallsValid_nonrecursive(const minLang::ast::block& block, bool& valid){
+	for(const auto& state : block.statements){
+		if(std::holds_alternative<minLang::ast::expr>(state)){
+			const auto& expr = std::get<minLang::ast::expr>(state);
+			checkCallsValid_nonrecursive_addExpr(expr, valid);
+		}else if(std::holds_alternative<minLang::ast::block::declaration>(state)){
+		}else if(std::holds_alternative<minLang::ast::block::assignment>(state)){
+			//can be ignored as we're (hopefully) only assigning to variable we've already defined (and thus we already know the type)
+		}else if(std::holds_alternative<minLang::ast::block::ifStatement>(state)){
+			const auto& ifStat = std::get<minLang::ast::block::ifStatement>(state);
+			checkCallsValid_nonrecursive_addExpr(ifStat.condition, valid);
+			checkCallsValid_nonrecursive(*ifStat.ifBody, valid);
+			checkCallsValid_nonrecursive(*ifStat.elseBody, valid);
+		}else if(std::holds_alternative<minLang::ast::block::forStatement_while>(state)){
+			const auto& whileStat = std::get<minLang::ast::block::forStatement_while>(state);
+			checkCallsValid_nonrecursive_addExpr(whileStat.condition, valid);
+			checkCallsValid_nonrecursive(*whileStat.body, valid);
+		}else if(std::holds_alternative<minLang::ast::block::forStatement_normal>(state)){
+			const auto& forStat = std::get<minLang::ast::block::forStatement_normal>(state);
+			checkCallsValid_nonrecursive_addExpr(forStat.breakCond, valid);
+			checkCallsValid_nonrecursive(*forStat.body, valid);
+		}else{
+			std::cerr<<"Error: found unknown statement while searching for types in block"<<std::endl;
+		}
+	}
+}
+
+bool minLang::backends::checkAllCallsValidated_nonRecursive(const minLang::ast::function& func){
+	bool output = true;
+	checkCallsValid_nonrecursive(func.body, output);
+	return output;
+}

@@ -69,6 +69,38 @@ minLang::backends::cCodeGen::cTypeInfo genCTypeInfo(const minLang::ast::type& ty
 		baseTy.cName += "*";
 		baseTy.isPointer++;
 		return baseTy;
+	}else if(std::holds_alternative<minLang::ast::type::tuple_type>(ty.ty)){
+		const auto& tupleTy = std::get<minLang::ast::type::tuple_type>(ty.ty);
+		minLang::backends::cCodeGen::cTypeInfo output{};
+		if(tst.knownTypes.contains(ty)){
+			output.cName = tst.find(ty).name;
+			//std::cout<<"looking up type in table: "<<ty.toString()<<std::endl;
+		}else{
+			std::string structDef = "{\n";
+			for(unsigned int i=0;i<tupleTy.size();i++){
+				auto subTypeInfo = genCTypeInfo(tupleTy[i], tst);
+				structDef += "\t" + subTypeInfo.cName + " val" + std::to_string(i) + ";\n";
+			}
+			structDef += "};";
+			std::string structName = "cCodeGen_tupleStructDef_" + std::to_string(tst.entries.size());
+			structDef = "struct " + structName + structDef;
+			if(tst.knownTypes.contains(ty)){
+				output.cName = tst.find(ty).name;
+			}else{
+				tst.knownTypes.insert(ty);
+				tst.entries.push_back(typeStructTable_entry{ty, "struct " + structName, structDef});
+				output.cName = "struct " + structName;
+			}
+
+			//let's actually just not worry about this yet
+			/*
+			if(ty.getSize() > 8 *64 bytes*){
+				output.cName += "*";
+				output.isPointer++;
+			}
+			*/
+		}
+		return output;
 	}else{
 		std::cerr<<"cCodeGen Error: tried to get C type info of an unknown type: "<<ty.toString()<<std::endl;
 		return {};
@@ -129,6 +161,17 @@ std::string minLang::backends::cCodeGen::getDefaultTypeValue(const minLang::ast:
 		for(unsigned int i=0;i<array.length;i++){
 			output += perElementDefVal;
 			if(i+1 < array.length)
+				output += ", ";
+		}
+		output += "}";
+		return output;
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty.ty)){
+		//TODO: very VERY likely needs to be fixed.  Not sure how to though (maybe just include a table of default values at the top of the file?)
+		const auto& tuple = std::get<ast::type::tuple_type>(ty.ty);
+		std::string output = "{";
+		for(unsigned int i=0;i<tuple.size();i++){
+			output += getDefaultTypeValue(tuple[i], types);
+			if(i+1 < tuple.size())
 				output += ", ";
 		}
 		output += "}";

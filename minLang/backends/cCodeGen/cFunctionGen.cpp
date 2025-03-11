@@ -61,6 +61,16 @@ std::string literalToCLit(const minLang::ast::literal& lit){
 		}
 		output += "}";
 		return output;
+	}else if(std::holds_alternative<minLang::ast::literal::tuple_literal>(lit.value)){
+		const auto& tup = std::get<minLang::ast::literal::tuple_literal>(lit.value);
+		std::string output = "{";
+		for(unsigned int i=0;i<tup.vals.size();i++){
+			output += literalToCLit(tup.vals[i]);
+			if(i+1 < tup.vals.size())
+				output += ", ";
+		}
+		output += "}";
+		return output;
 	}else{
 		std::cerr<<"Error: unable to cCodeGen literal (empty)"<<std::endl;
 		return "<error literal>";

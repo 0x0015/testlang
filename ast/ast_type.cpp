@@ -96,7 +96,7 @@ unsigned int ast::type::getSize() const{
 			case ast::type::int64_type:
 			case ast::type::uint64_type:
 			case ast::type::float64_type:
-				return 4;
+				return 8;
 			case ast::type::bool_type:
 				return 1;
 			default:

@@ -1,4 +1,5 @@
 #include "minLangConvert.hpp"
+#include "../minLang/backends/util.hpp"
 
 void fixValidatedDefsExp(minLang::ast::expr& exp, const toMinLangFuncMap& funcMap){
 	if(std::holds_alternative<minLang::ast::call>(exp.value)){
@@ -8,6 +9,10 @@ void fixValidatedDefsExp(minLang::ast::expr& exp, const toMinLangFuncMap& funcMa
 		auto funcFrom = *(*badPtr)->validatedDef;
 		auto mapTo = funcMap.at(funcFrom);
 		call.validatedDef = mapTo;
+		if(!call.validatedDef)
+			std::cerr<<"Failed to fix def! not in the func map!!!  should never happen"<<std::endl;
+		for(auto& arg : call.args)
+			fixValidatedDefsExp(arg, funcMap);
 	}
 }
 
@@ -57,8 +62,12 @@ std::optional<minLang::ast::context> minLangConvert(const ast::context& context)
 	}
 
 	//now loop over all exprs and fix validatedDefs
-	for(auto& func : output.funcs)
+	for(auto& func : output.funcs){
 		fixValidatedDefsFunc(func, funcMap);
+		if(!minLang::backends::checkAllCallsValidated_nonRecursive(func)){
+			std::cerr<<"Error: failed to fix all validated defs"<<std::endl;
+		}
+	}
 
 	return output;
 }
@@ -134,6 +143,16 @@ std::optional<minLang::ast::type> minLangConvertType(const ast::type& ty){
 		if(!derivedTy)
 			return std::nullopt;
 		return minLang::ast::type::array_type{*derivedTy, arrayTy.length};
+	}else if(std::holds_alternative<ast::type::tuple_type>(ty.ty)){
+		const auto& tupleTy = std::get<ast::type::tuple_type>(ty.ty);
+		minLang::ast::type::tuple_type output{tupleTy.size()};
+		for(unsigned int i=0;i<tupleTy.size();i++){
+			const auto& tupConv = minLangConvertType(tupleTy[i]);
+			if(!tupConv)
+				return std::nullopt;
+			output[i] = *tupConv;
+		}
+		return output;
 	}
 	std::cerr<<"Error: During minLang conversion found unsupported type "<<ty.toString()<<std::endl;
 	return std::nullopt;
@@ -268,6 +287,9 @@ std::optional<minLang::ast::expr> minLangConvertExpr(const ast::expr& exp){
 			//save for later
 			//THIS IS VERY BAD CODE
 			//LIKE ACTUALLY VERY VERY BAD
+		}else{
+			std::cerr<<"Error: During minLang conversion, encountered non-valid call "<<call.name<<std::endl;
+			return std::nullopt;
 		}
 		return output;
 	}else if(std::holds_alternative<ast::varName>(exp.value)){

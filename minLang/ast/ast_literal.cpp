@@ -32,7 +32,7 @@ std::string minLang::ast::literal::toString() const{
 		}
 		output += ']';
 		return output;
-	}/*else if(std::holds_alternative<tuple_literal>(value)){
+	}else if(std::holds_alternative<tuple_literal>(value)){
 		const auto& arr = std::get<tuple_literal>(value);
 		std::string output = "{";
 		for(unsigned int i=0;i<arr.vals.size();i++){
@@ -43,7 +43,6 @@ std::string minLang::ast::literal::toString() const{
 		output += '}';
 		return output;
 	}
-	*/
 	std::cerr<<"Error: invalid builtin"<<std::endl;
 	return "<unknown literal>";
 }

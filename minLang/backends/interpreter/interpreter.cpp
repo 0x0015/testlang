@@ -1,5 +1,6 @@
 #include "interpreter.hpp"
 #include <cstring>
+#include "../util.hpp"
 
 bool minLang::backends::interpreter::interpret(const minLang::ast::context& context, const std::string_view entryPoint, std::span<const std::string> linkLibs){
 	std::optional<std::reference_wrapper<const minLang::ast::function>> entry;
@@ -11,6 +12,10 @@ bool minLang::backends::interpreter::interpret(const minLang::ast::context& cont
 	}
 	if(!entry){
 		std::cerr<<"Error: Unable to find entry point function \""<<entryPoint<<"\" (must be void->void)"<<std::endl;
+		return false;
+	}
+	if(!checkAllCallsValidated(*entry)){
+		std::cerr<<"Error: Non-valid calls were found.  This should never happen.  Aborting"<<std::endl;
 		return false;
 	}
 	interpreter M;
@@ -39,11 +44,24 @@ std::vector<uint8_t> getLiteralValue(const minLang::ast::literal& lit){
 			std::memcpy(output.data(), &arg, sizeof(arg_t));
 			return output;
 		}, builtin);
-		return output;	
+		if(output.size() != lit.ty.getSize()){
+			std::cerr<<"Interpreter error: Got builtin literal value of incorrect size (was "<<output.size()<<", should be "<<lit.ty.getSize()<<")"<<std::endl;
+		}
+		return output;
 	}else if(std::holds_alternative<minLang::ast::literal::array_literal>(lit.value)){
 		const auto& array = std::get<minLang::ast::literal::array_literal>(lit.value);
 		std::vector<uint8_t> output;
 		for(const auto& elm : array.vals){
+			const auto& val = getLiteralValue(elm);
+			unsigned int oldOutputSize = output.size();
+			output.resize(output.size() + val.size());
+			std::memcpy(output.data() + oldOutputSize, val.data(), val.size());
+		}
+		return output;
+	}else if(std::holds_alternative<minLang::ast::literal::tuple_literal>(lit.value)){
+		const auto& tuple = std::get<minLang::ast::literal::tuple_literal>(lit.value);
+		std::vector<uint8_t> output;
+		for(const auto& elm : tuple.vals){
 			const auto& val = getLiteralValue(elm);
 			unsigned int oldOutputSize = output.size();
 			output.resize(output.size() + val.size());
@@ -105,6 +123,7 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::interpretExpr(
 		return getLiteralValue(lit);
 	}else if(std::holds_alternative<minLang::ast::call>(expr.value)){
 		const auto& call = std::get<minLang::ast::call>(expr.value);
+		//std::cout<<"Interpreting call: "<<call.name<<std::endl;
 		return interpretCall(call);
 	}else if(std::holds_alternative<minLang::ast::varName>(expr.value)){
 		const auto& varName = std::get<minLang::ast::varName>(expr.value);
@@ -116,6 +135,10 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::interpretExpr(
 }
 
 std::vector<uint8_t> minLang::backends::interpreter::interpreter::interpretCall(const minLang::ast::call& call){
+	if(!call.validatedDef){
+		std::cerr<<"Interpreter Error: unable to call non validated function"<<std::endl;
+		return {};
+	}
 	const minLang::ast::function& func = call.validatedDef->get();
 
 	switch(func.status){
@@ -128,7 +151,12 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::interpretCall(
 	}
 
 	for(unsigned int i=0;i<call.args.size();i++){
-		varEntries[func.args[i].name] = interpretExpr(call.args[i]);
+		const auto& arg = interpretExpr(call.args[i]);
+		if(arg.size() != call.validatedDef->get().args[i].ty.getSize()){
+			std::cerr<<"Interpreter error: got arg with incorrect size wrt type"<<std::endl;
+			return {};
+		}
+		varEntries[func.args[i].name] = arg;
 	}
 	
 	interpretBlock(func.body);
@@ -136,7 +164,7 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::interpretCall(
 	//cleanup local vars after the function call is over
 	for(unsigned int i=0;i<call.args.size();i++){
 		varEntries.erase(func.args[i].name);
-	} 
+	}
 
 	return returnBuffer;//change once the return function is implemented
 }

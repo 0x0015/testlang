@@ -34,6 +34,8 @@ struct funcSigComp{
 
 std::unordered_set<std::reference_wrapper<const minLang::ast::function>, funcSigHasher, funcSigComp> findUsedFunctions(const ast::function& entrypoint);
 std::unordered_set<ast::type, typeHasher> findUsedTypes(const ast::function& entrypoint);
+bool checkAllCallsValidated(const ast::function& entrypoint);
+bool checkAllCallsValidated_nonRecursive(const ast::function& func);
 
 }
 }

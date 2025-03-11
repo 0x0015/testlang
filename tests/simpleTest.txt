@@ -22,7 +22,7 @@ void main(){
 	myStruct2 testVar3;
 }
 
-int32 test2(float testArg){
+int32 test2(float32 testArg){
 }
 
 

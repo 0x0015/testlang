@@ -128,7 +128,7 @@ struct builtinFuncLibrary{
 		using funcArgsTuple = std::conditional_t<std::is_function<func>::value, decltype(arguments(*f)), decltype(arguments(*f))>;
 		std::vector<uint8_t> call(const std::vector<std::vector<uint8_t>>& args){
 			if(std::tuple_size<funcArgsTuple>::value != args.size()){
-				std::cout<<"Error: wrong number of func args for builtin function call!"<<std::endl;
+				std::cerr<<"Error: wrong number of func args for builtin function call!"<<std::endl;
 				return {};
 			}
 			funcArgsTuple argsTuple = vec_to_tup(args, empty_vpack(funcArgsTuple{}));
@@ -146,24 +146,26 @@ struct builtinFuncLibrary{
 	}
 	std::unordered_map<builtinFuncDetail, std::shared_ptr<funcWrapper_base>, builtinFuncDetail_hasher> bulitinFuncs;
 	bool containsCall(const minLang::ast::call& call) const{
+		if(!call.validatedDef)
+			std::cerr<<"Interpreter Error: trying to check on call which is not validated"<<std::endl;
 		builtinFuncDetail funcDetail{call.name, call.validatedDef->get().ty};
 		funcDetail.argTypes.resize(call.args.size());
 		for(unsigned int i=0;i<call.args.size();i++)
-			funcDetail.argTypes[i] = *call.args[i].inferType();
+			funcDetail.argTypes[i] = call.validatedDef->get().args[i].ty;
 		return bulitinFuncs.contains(funcDetail);
 	}
 	std::vector<uint8_t> makeCall(const minLang::ast::call& call, const std::vector<std::vector<uint8_t>>& args){
 		builtinFuncDetail funcDetail{call.name, call.validatedDef->get().ty};
 		funcDetail.argTypes.resize(call.args.size());
 		for(unsigned int i=0;i<call.args.size();i++)
-			funcDetail.argTypes[i] = *call.args[i].inferType();
+			funcDetail.argTypes[i] = call.validatedDef->get().args[i].ty;
 		auto& funcWrapper = bulitinFuncs.at(funcDetail);
 
 		return funcWrapper->call(args);
 	}
 };
 
-builtinFuncLibrary builtinLibrary;
+builtinFuncLibrary builtinLibrary{};
 
 template<typename T> void addBasicPrintBuiltins(const minLang::ast::type& ty){
 	builtinLibrary.bulitinFuncs[{"print", minLang::ast::type::void_type, {ty}}] = builtinFuncLibrary::wrapFunc(minLang::backends::interpreter::impl::print<T>);
@@ -246,20 +248,35 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::handleBuiltinC
 	//const auto& func = call.validatedDef->get();
 
 	if(!(builtinLibrary.containsCall(call) || call.name == ("get") || call.name == ("set"))){
-		std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
+		if(call.validatedDef){
+			std::cerr<<"Error: Call to unknown builtin \""<<call.validatedDef->get().ty.toString()<<" "<<call.name<<"(";;
+			for(unsigned int i=0;i<call.validatedDef->get().args.size();i++){
+				std::cerr<<call.validatedDef->get().args[i].ty.toString();
+				if(i+1 < call.validatedDef->get().args.size())
+					std::cerr<<", ";
+			}
+			std::cerr<<")\""<<std::endl;
+		}else{
+			std::cerr<<"Error: Call to unknown builtin \""<<call.name<<"\""<<std::endl;
+		}
 		return {};
 	}
 
 	std::vector<std::vector<uint8_t>> callArgs(call.args.size());
 	for(unsigned int i=0;i<callArgs.size();i++){
 		callArgs[i] = interpretExpr(call.args[i]);
+		if(callArgs[i].size() != call.validatedDef->get().args[i].ty.getSize()){
+			std::cerr<<"Interpreter error: got arg with incorrect size wrt type (got "<<callArgs[i].size()<<", expected "<<call.validatedDef->get().args[i].ty.getSize()<<")"<<std::endl;
+			std::terminate();
+			return {};
+		}
 	}
 	
 	if(call.name == ("get")){
 		const auto& callTy = call.validatedDef->get().ty;
 		
 		if(!std::holds_alternative<minLang::ast::type::array_type>(call.args[0].inferType()->ty)){
-			std::cout<<"Error: call to unknown get function builtin (type is not an array, but"<<callTy.toString()<<")"<<std::endl;
+			std::cerr<<"Error: call to unknown get function builtin (type is not an array, but"<<callTy.toString()<<")"<<std::endl;
 			return {};
 		}
 		
@@ -273,7 +290,7 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::handleBuiltinC
 		const auto& callTy = call.validatedDef->get().ty;
 		
 		if(!std::holds_alternative<minLang::ast::type::array_type>(call.args[0].inferType()->ty)){
-			std::cout<<"Error: call to unknown get function builtin (type is not an array, but "<<callTy.toString()<<")"<<std::endl;
+			std::cerr<<"Error: call to unknown get function builtin (type is not an array, but "<<callTy.toString()<<")"<<std::endl;
 			return {};
 		}
 
@@ -286,8 +303,9 @@ std::vector<uint8_t> minLang::backends::interpreter::interpreter::handleBuiltinC
 		std::memcpy(output.data()+(arrTySize*arrIndex), value.data(), std::min((std::size_t)arrTySize, value.size()));
 		//std::cout<<"Setting "<<arrIndex<<"th element of array with size "<<callArgs[0].size()<<" bytes"<<std::endl;
 		return output;
-	}else
+	}else{
 		return builtinLibrary.makeCall(call, callArgs);
+	}
 	
 
 	/*
